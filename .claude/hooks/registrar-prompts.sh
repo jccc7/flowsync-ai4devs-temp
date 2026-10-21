@@ -9,8 +9,8 @@
 #               **Modelo:**, **Herramienta:** (más fecha y hora, esfuerzo y sesión)
 #               el texto, literal, dentro de un bloque de código sin lenguaje
 #   Respuesta:  ### Respuesta a Prompt N (subapartado del prompt, después de su bloque)
-#               todo el texto de la respuesta + las herramientas que se usaron
-#               + cada comando de la herramienta Bash, entero y con su resultado
+#               todo el texto de la respuesta + cada comando de la herramienta
+#               Bash, entero y con su resultado
 #   Comando:    ### Comando de shell     (lo que la persona lanza con `!` en el prompt)
 #               el comando, su salida y sus errores, cada uno en su bloque
 #
@@ -104,24 +104,11 @@ def salida($out; $err):
   | if length > 0 then join("\n\n") else "_(Sin salida.)_" end;
 JQ
 
-# Arma el cuerpo de la respuesta a partir de las entradas del transcript. Los
-# comandos de la herramienta Bash van además, enteros y con su resultado, en
-# un bloque aparte.
+# Arma el cuerpo de la respuesta a partir de las entradas del transcript: el
+# texto y, en un bloque aparte, los comandos de la herramienta Bash, enteros y
+# con su resultado.
 read -r -d '' PROGRAMA_RESPUESTA <<'JQ'
 def esc:gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
-def corto($n): gsub("\\s*\\n\\s*"; " ⏎ ") | if length > $n then .[0:$n] + "…" else . end;
-def codigo: "<code>" + (corto(300) | esc) + "</code>";
-def resumen:
-  .input as $i
-  | if .name == "Bash" then
-      ([($i.description // empty | esc), ($i.command // empty | codigo)] | join(" — "))
-    elif ($i.file_path // $i.path // $i.notebook_path) then
-      (($i.file_path // $i.path // $i.notebook_path) | codigo)
-    elif $i.pattern then ($i.pattern | codigo)
-    elif $i.description then ($i.description | esc)
-    elif $i.query then ($i.query | codigo)
-    else ($i | tojson | codigo)
-    end;
 # $x: el tool_result del comando, con el toolUseResult de su mensaje.
 def resultado($x):
   if $x == null then "_(Sin resultado en el transcript.)_"
@@ -138,16 +125,10 @@ def resultado($x):
 | [ $bloques[] | select(.type == "text") | .text | select(test("\\S")) ] as $textos
 | (if ($final | test("\\S")) and (($textos | last // "") | rtrimstr("\n")) != ($final | rtrimstr("\n"))
    then $textos + [$final] else $textos end) as $textos
-| [ $bloques[] | select(.type == "tool_use") ] as $herramientas
+| [ $bloques[] | select(.type == "tool_use" and .name == "Bash") ] | to_entries as $bash
 | (if ($textos | length) > 0 then $textos | join("\n\n")
    else "_(Sin texto de respuesta: el turno solo tuvo acciones.)_" end)
-  + (if ($herramientas | length) > 0 then
-       "\n\n<details>\n<summary>Herramientas usadas (\($herramientas | length))</summary>\n\n"
-       + ([ $herramientas | to_entries[] | "\(.key + 1). **\(.value.name)** — \(.value | resumen)" ] | join("\n"))
-       + "\n\n</details>"
-     else "" end)
-  + ([ $herramientas | to_entries[] | select(.value.name == "Bash") ] as $bash
-     | if ($bash | length) > 0 then
+  + (if ($bash | length) > 0 then
          "\n\n<details>\n<summary>Comandos de shell y sus resultados (\($bash | length))</summary>\n\n"
          + ([ $bash[]
               | "**\(.key + 1). \(.value.input.description // "Bash" | esc)**\n\n"
