@@ -10,6 +10,14 @@
 #               el texto, literal, dentro de un bloque de código sin lenguaje
 #   Respuesta:  ### Respuesta a Prompt N (subapartado del prompt, después de su bloque)
 #               todo el texto de la respuesta + las herramientas que se usaron
+#   Comando:    ### Comando de shell     (lo que la persona lanza con `!` en el prompt)
+#               el comando, su salida y sus errores, cada uno en su bloque
+#
+# Los comandos con `!` no disparan ningún hook: quedan en el transcript como
+# mensajes `<bash-input>` seguidos de `<bash-stdout>`/`<bash-stderr>`, y se
+# recogen de ahí en el siguiente UserPromptSubmit, Stop o SessionEnd, con un
+# cursor propio (`.comandos_desde`) para no repetir ninguno. La salida va sin
+# códigos ANSI y recortada a MAX_LINEAS_SALIDA líneas.
 #
 # De dónde sale cada dato:
 #   - Modelo: el del último mensaje del asistente en el transcript; si aún no
@@ -136,6 +144,75 @@ registrar_respuesta() {
   guardar --argjson hasta "$hasta" '.respondido = true | .desde = $hasta'
 }
 
+MAX_LINEAS_SALIDA=200
+
+# Empareja cada `<bash-input>` con el mensaje de salida que le sigue y lo pasa
+# a Markdown. Devuelve {md, cursor}: el cursor se queda antes de un comando que
+# aún no tiene salida en el transcript, salvo con $cerrar (fin de sesión).
+read -r -d '' PROGRAMA_COMANDOS <<'JQ'
+def texto: if type == "string" then . elif type == "array" then [ .[]? | select(.type == "text") | .text ] | join("") else "" end;
+def etiqueta($t): (capture("<" + $t + ">(?<v>[\\s\\S]*?)</" + $t + ">").v // "")
+  | gsub("\u001b\\[[0-9;?]*[ -/]*[@-~]"; "") | rtrimstr("\n");
+def fence: ([ match("`+"; "g").length ] | max // 0) as $m | "`" * ([$m + 1, 3] | max);
+def bloque($lenguaje):
+  split("\n") as $l
+  | (if ($l | length) > $max then $l[0:$max] | join("\n") else . end) as $v
+  | ($v | fence) as $f
+  | "\($f)\($lenguaje)\n\($v)\n\($f)"
+    + (if ($l | length) > $max then "\n\n_(Recortada: \(($l | length) - $max) líneas más sin registrar.)_" else "" end);
+def hora: (sub("\\.[0-9]+Z$"; "Z") | fromdate | strflocaltime("%Y-%m-%d %H:%M:%S %Z"))? // .;
+
+[ .[] | select(.e.type == "user" and (.e.isSidechain | not))
+  | { n, ts: .e.timestamp, t: (.e.message.content | texto) }
+  | select(.t | test("^\\s*<bash-(input|stdout|stderr)>")) ] as $mensajes
+| reduce $mensajes[] as $m ({ pares: [], abierto: null };
+    if ($m.t | test("<bash-input>")) then
+      (if .abierto then .pares += [.abierto] else . end)
+      | .abierto = { n: $m.n, ts: $m.ts, cmd: ($m.t | etiqueta("bash-input")) }
+    elif .abierto then
+      .pares += [ .abierto + { salida: true, out: ($m.t | etiqueta("bash-stdout")), err: ($m.t | etiqueta("bash-stderr")) } ]
+      | .abierto = null
+    else . end)
+| (if .abierto and $cerrar then .pares += [.abierto] | .abierto = null else . end)
+| {
+    cursor: (if .abierto then .abierto.n - 1 else $hasta end),
+    md: [ .pares[]
+          | "\n### Comando de shell\n\n*Ejecutado: \(.ts // "" | hora)*\n\n\(.cmd | bloque("bash"))\n\n"
+            + (if (.salida | not) then "_(Sin salida registrada.)_"
+               elif (.out | test("\\S") | not) and (.err | test("\\S") | not) then "_(Sin salida.)_"
+               else
+                 ([ (if (.out | test("\\S")) then "**Salida:**\n\n" + (.out | bloque("")) else empty end),
+                    (if (.err | test("\\S")) then "**Errores:**\n\n" + (.err | bloque("")) else empty end) ]
+                  | join("\n\n"))
+               end)
+          + "\n" ] | join("")
+  }
+JQ
+
+# $1: última línea del transcript que se revisa (por defecto, hasta el final).
+# $2: "cerrar" para registrar también un comando que se quedó sin salida.
+registrar_comandos() {
+  local hasta desde resultado md cursor
+  [ -f "$transcript" ] || return 0
+  hasta=${1:-$(lineas_transcript)}
+  desde=$(leer '.comandos_desde')
+  desde=${desde:-0}
+  [ "$hasta" -gt "$desde" ] || return 0
+  resultado=$(
+    head -n "$hasta" "$transcript" | tail -n +"$((desde + 1))" |
+      jq -R -c --argjson base "$desde" '(fromjson? // empty) as $e | { n: ($base + input_line_number), e: $e }' |
+      jq -s -c --argjson hasta "$hasta" --argjson max "$MAX_LINEAS_SALIDA" \
+        --argjson cerrar "$([ "${2:-}" = cerrar ] && echo true || echo false)" "$PROGRAMA_COMANDOS"
+  ) || return 0
+  md=$(jq -r '.md' <<<"$resultado")
+  cursor=$(jq -r '.cursor' <<<"$resultado")
+  if [ -n "$md" ]; then
+    asegurar_destino
+    printf '%s\n' "$md" >>"$destino"
+  fi
+  [ "$cursor" -gt "$desde" ] && guardar --argjson c "$cursor" '.comandos_desde = $c'
+}
+
 buscar_en_settings() {
   local filtro=$1 f v
   for f in "$raiz/.claude/settings.local.json" "$raiz/.claude/settings.json" "$HOME/.claude/settings.json"; do
@@ -155,6 +232,7 @@ registrar_prompt() {
     IFS=$'\t' read -r linea ts < <(
       jq -R -r --arg id "$prompt_id" \
         'fromjson? // empty | select(.type == "user" and .promptId == $id and (.isMeta | not) and .toolUseResult == null)
+         | select(.message.content | tostring | test("^\\s*<bash-(input|stdout|stderr)>") | not)
          | [input_line_number, .timestamp] | @tsv' "$transcript" | head -1
     )
   fi
@@ -164,6 +242,8 @@ registrar_prompt() {
   if [ -n "$(leer '.prompt')" ] && [ "$(leer '.respondido')" != "true" ]; then
     registrar_respuesta "" "$((linea ? linea - 1 : desde))"
   fi
+  # Comandos con `!` lanzados desde la última respuesta, antes de este prompt.
+  registrar_comandos "$((linea ? linea - 1 : desde))"
 
   if [ -f "$transcript" ]; then
     modelo=$(head -n "$desde" "$transcript" | jq -R -r 'fromjson? // empty
@@ -206,9 +286,13 @@ case "$evento" in
     [ -n "$modelo" ] && guardar --arg m "$modelo" '.modelo = $m'
     ;;
   UserPromptSubmit) registrar_prompt ;;
-  Stop) registrar_respuesta "$(campo '.last_assistant_message')" ;;
+  Stop)
+    registrar_respuesta "$(campo '.last_assistant_message')"
+    registrar_comandos
+    ;;
   SessionEnd)
     [ -n "$(leer '.prompt')" ] && [ "$(leer '.respondido')" != "true" ] && registrar_respuesta ""
+    registrar_comandos "" cerrar
     ;;
 esac
 exit 0
