@@ -10,14 +10,16 @@
 #               el texto, literal, dentro de un bloque de código sin lenguaje
 #   Respuesta:  ### Respuesta a Prompt N (subapartado del prompt, después de su bloque)
 #               todo el texto de la respuesta + las herramientas que se usaron
+#               + cada comando de la herramienta Bash, entero y con su resultado
 #   Comando:    ### Comando de shell     (lo que la persona lanza con `!` en el prompt)
 #               el comando, su salida y sus errores, cada uno en su bloque
 #
 # Los comandos con `!` no disparan ningún hook: quedan en el transcript como
 # mensajes `<bash-input>` seguidos de `<bash-stdout>`/`<bash-stderr>`, y se
 # recogen de ahí en el siguiente UserPromptSubmit, Stop o SessionEnd, con un
-# cursor propio (`.comandos_desde`) para no repetir ninguno. La salida va sin
-# códigos ANSI y recortada a MAX_LINEAS_SALIDA líneas.
+# cursor propio (`.comandos_desde`) para no repetir ninguno. Los resultados de
+# los comandos de Claude salen de los `tool_result` del transcript. Toda salida
+# va sin códigos ANSI y recortada a MAX_LINEAS_SALIDA líneas.
 #
 # De dónde sale cada dato:
 #   - Modelo: el del último mensaje del asistente en el transcript; si aún no
@@ -82,9 +84,31 @@ fence_para() {
   printf '%*s' "$((n + 1))" '' | tr ' ' '`'
 }
 
-# Arma el cuerpo de la respuesta a partir de las entradas del transcript.
+MAX_LINEAS_SALIDA=200
+
+# Definiciones de jq que comparten la respuesta y los comandos con `!`.
+# `bloque` y `salida` recortan a $max líneas, y cada línea a 1000 caracteres.
+read -r -d '' DEFS_JQ <<'JQ'
+def texto: if type == "string" then . elif type == "array" then [ .[]? | select(.type == "text") | .text ] | join("") else "" end;
+def limpio: tostring | gsub("\u001b\\[[0-9;?]*[ -/]*[@-~]"; "") | rtrimstr("\n");
+def fence: ([ match("`+"; "g").length ] | max // 0) as $m | "`" * ([$m + 1, 3] | max);
+def bloque($lenguaje):
+  [ split("\n")[] | if length > 1000 then .[0:1000] + " …(línea recortada)" else . end ] as $l
+  | ($l[0:$max] | join("\n")) as $v
+  | ($v | fence) as $f
+  | "\($f)\($lenguaje)\n\($v)\n\($f)"
+    + (if ($l | length) > $max then "\n\n_(Recortada: \(($l | length) - $max) líneas más sin registrar.)_" else "" end);
+def salida($out; $err):
+  [ (if ($out | test("\\S")) then "**Salida:**\n\n" + ($out | bloque("")) else empty end),
+    (if ($err | test("\\S")) then "**Errores:**\n\n" + ($err | bloque("")) else empty end) ]
+  | if length > 0 then join("\n\n") else "_(Sin salida.)_" end;
+JQ
+
+# Arma el cuerpo de la respuesta a partir de las entradas del transcript. Los
+# comandos de la herramienta Bash van además, enteros y con su resultado, en
+# un bloque aparte.
 read -r -d '' PROGRAMA_RESPUESTA <<'JQ'
-def esc: gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+def esc:gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
 def corto($n): gsub("\\s*\\n\\s*"; " ⏎ ") | if length > $n then .[0:$n] + "…" else . end;
 def codigo: "<code>" + (corto(300) | esc) + "</code>";
 def resumen:
@@ -98,8 +122,19 @@ def resumen:
     elif $i.query then ($i.query | codigo)
     else ($i | tojson | codigo)
     end;
+# $x: el tool_result del comando, con el toolUseResult de su mensaje.
+def resultado($x):
+  if $x == null then "_(Sin resultado en el transcript.)_"
+  elif $x.error then "**Error:**\n\n" + ($x.contenido | limpio | bloque(""))
+  elif ($x.r | type) == "object" and ($x.r | has("stdout")) then salida($x.r.stdout // "" | limpio; $x.r.stderr // "" | limpio)
+  else salida($x.contenido | limpio; "")
+  end;
 
-[ .[] | select(.type == "assistant" and (.isSidechain | not)) | .message.content[]? ] as $bloques
+(reduce (.[] | select(.type == "user" and (.isSidechain | not)) | .toolUseResult as $r
+         | .message.content[]? | select(.type == "tool_result")
+         | { id: .tool_use_id, r: $r, contenido: (.content | texto), error: (.is_error == true) }) as $x
+   ({}; .[$x.id // ""] = $x)) as $resultados
+| [ .[] | select(.type == "assistant" and (.isSidechain | not)) | .message.content[]? ] as $bloques
 | [ $bloques[] | select(.type == "text") | .text | select(test("\\S")) ] as $textos
 | (if ($final | test("\\S")) and (($textos | last // "") | rtrimstr("\n")) != ($final | rtrimstr("\n"))
    then $textos + [$final] else $textos end) as $textos
@@ -111,6 +146,15 @@ def resumen:
        + ([ $herramientas | to_entries[] | "\(.key + 1). **\(.value.name)** — \(.value | resumen)" ] | join("\n"))
        + "\n\n</details>"
      else "" end)
+  + ([ $herramientas | to_entries[] | select(.value.name == "Bash") ] as $bash
+     | if ($bash | length) > 0 then
+         "\n\n<details>\n<summary>Comandos de shell y sus resultados (\($bash | length))</summary>\n\n"
+         + ([ $bash[]
+              | "**\(.key + 1). \(.value.input.description // "Bash" | esc)**\n\n"
+                + (.value.input.command // "" | bloque("bash")) + "\n\n"
+                + resultado($resultados[.value.id // ""]) ] | join("\n\n"))
+         + "\n\n</details>"
+       else "" end)
 JQ
 
 # $1: last_assistant_message (vacío si no lo hay).
@@ -133,7 +177,8 @@ registrar_respuesta() {
     [ -f "$transcript" ] && head -n "$hasta" "$transcript" | tail -n +"$((desde + 1))" |
       jq -R -c 'fromjson? // empty'
   )
-  cuerpo=$(jq -rs --arg final "$final" "$PROGRAMA_RESPUESTA" <<<"$entradas") || return 0
+  cuerpo=$(jq -rs --arg final "$final" --argjson max "$MAX_LINEAS_SALIDA" "$DEFS_JQ
+$PROGRAMA_RESPUESTA" <<<"$entradas") || return 0
   # Hora del último mensaje de la respuesta; si no la hay (Stop con el
   # transcript aún sin volcar), la de ahora, que es cuando acaba el turno.
   fin=$(jq -r 'select(.type == "assistant" and (.isSidechain | not)) | .timestamp // empty' <<<"$entradas" | tail -1)
@@ -144,22 +189,11 @@ registrar_respuesta() {
   guardar --argjson hasta "$hasta" '.respondido = true | .desde = $hasta'
 }
 
-MAX_LINEAS_SALIDA=200
-
 # Empareja cada `<bash-input>` con el mensaje de salida que le sigue y lo pasa
 # a Markdown. Devuelve {md, cursor}: el cursor se queda antes de un comando que
 # aún no tiene salida en el transcript, salvo con $cerrar (fin de sesión).
 read -r -d '' PROGRAMA_COMANDOS <<'JQ'
-def texto: if type == "string" then . elif type == "array" then [ .[]? | select(.type == "text") | .text ] | join("") else "" end;
-def etiqueta($t): (capture("<" + $t + ">(?<v>[\\s\\S]*?)</" + $t + ">").v // "")
-  | gsub("\u001b\\[[0-9;?]*[ -/]*[@-~]"; "") | rtrimstr("\n");
-def fence: ([ match("`+"; "g").length ] | max // 0) as $m | "`" * ([$m + 1, 3] | max);
-def bloque($lenguaje):
-  split("\n") as $l
-  | (if ($l | length) > $max then $l[0:$max] | join("\n") else . end) as $v
-  | ($v | fence) as $f
-  | "\($f)\($lenguaje)\n\($v)\n\($f)"
-    + (if ($l | length) > $max then "\n\n_(Recortada: \(($l | length) - $max) líneas más sin registrar.)_" else "" end);
+def etiqueta($t): (capture("<" + $t + ">(?<v>[\\s\\S]*?)</" + $t + ">").v // "") | limpio;
 def hora: (sub("\\.[0-9]+Z$"; "Z") | fromdate | strflocaltime("%Y-%m-%d %H:%M:%S %Z"))? // .;
 
 [ .[] | select(.e.type == "user" and (.e.isSidechain | not))
@@ -178,13 +212,7 @@ def hora: (sub("\\.[0-9]+Z$"; "Z") | fromdate | strflocaltime("%Y-%m-%d %H:%M:%S
     cursor: (if .abierto then .abierto.n - 1 else $hasta end),
     md: [ .pares[]
           | "\n### Comando de shell\n\n*Ejecutado: \(.ts // "" | hora)*\n\n\(.cmd | bloque("bash"))\n\n"
-            + (if (.salida | not) then "_(Sin salida registrada.)_"
-               elif (.out | test("\\S") | not) and (.err | test("\\S") | not) then "_(Sin salida.)_"
-               else
-                 ([ (if (.out | test("\\S")) then "**Salida:**\n\n" + (.out | bloque("")) else empty end),
-                    (if (.err | test("\\S")) then "**Errores:**\n\n" + (.err | bloque("")) else empty end) ]
-                  | join("\n\n"))
-               end)
+            + (if .salida then salida(.out; .err) else "_(Sin salida registrada.)_" end)
           + "\n" ] | join("")
   }
 JQ
@@ -202,7 +230,8 @@ registrar_comandos() {
     head -n "$hasta" "$transcript" | tail -n +"$((desde + 1))" |
       jq -R -c --argjson base "$desde" '(fromjson? // empty) as $e | { n: ($base + input_line_number), e: $e }' |
       jq -s -c --argjson hasta "$hasta" --argjson max "$MAX_LINEAS_SALIDA" \
-        --argjson cerrar "$([ "${2:-}" = cerrar ] && echo true || echo false)" "$PROGRAMA_COMANDOS"
+        --argjson cerrar "$([ "${2:-}" = cerrar ] && echo true || echo false)" "$DEFS_JQ
+$PROGRAMA_COMANDOS"
   ) || return 0
   md=$(jq -r '.md' <<<"$resultado")
   cursor=$(jq -r '.cursor' <<<"$resultado")
