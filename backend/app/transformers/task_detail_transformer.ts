@@ -25,7 +25,7 @@ export default class TaskDetailTransformer extends BaseTransformer<Task> {
 
   toObject() {
     return {
-      ...this.pick(this.resource, ['id', 'title', 'status', 'createdAt', 'updatedAt']),
+      ...this.pick(this.resource, ['id', 'title', 'status', 'progress', 'createdAt', 'updatedAt']),
       // `dueDay` y no `dueDate`: leída de la base, `dueDate` es un `Date` y viajaría
       // como un instante con hora y huso, no como el día `AAAA-MM-DD` del contrato.
       dueDate: this.resource.dueDay,

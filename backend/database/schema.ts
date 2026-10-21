@@ -48,7 +48,7 @@ export class CommentSchema extends BaseModel {
 }
 
 export class TaskSchema extends BaseModel {
-  static $columns = ['assigneeId', 'createdAt', 'deletedAt', 'dueDate', 'id', 'status', 'title', 'updatedAt'] as const
+  static $columns = ['assigneeId', 'createdAt', 'deletedAt', 'dueDate', 'id', 'progress', 'status', 'title', 'updatedAt'] as const
   $columns = TaskSchema.$columns
   @column()
   declare assigneeId: number
@@ -60,6 +60,8 @@ export class TaskSchema extends BaseModel {
   declare dueDate: string | null
   @column({ isPrimary: true })
   declare id: number
+  @column()
+  declare progress: number
   @column()
   declare status: 'pending' | 'in_progress' | 'done'
   @column()

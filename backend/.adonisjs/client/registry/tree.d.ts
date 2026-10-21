@@ -37,6 +37,9 @@ export interface ApiDefinition {
     taskStatuses: {
       update: typeof routes['tasks.task_statuses.update']
     }
+    taskProgresses: {
+      update: typeof routes['tasks.task_progresses.update']
+    }
     taskDueDates: {
       update: typeof routes['tasks.task_due_dates.update']
     }

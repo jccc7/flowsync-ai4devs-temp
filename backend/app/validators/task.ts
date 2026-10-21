@@ -40,6 +40,22 @@ export const updateTaskStatusValidator = vine.create({
 })
 
 /**
+ * Fijar el avance de una tarea: un entero de 0 a 100, que se lee como porcentaje.
+ *
+ * `strict: true` es lo que impide que `"50"` se convierta en `50`: sin él, VineJS
+ * aceptaría dos formas del mismo dato. `withoutDecimals()` rechaza `42.5` en vez de
+ * redondearlo, y salirse del rango es un 422, nunca un recorte silencioso a 0 o a
+ * 100. `null` y la ausencia del campo también son 422: «sin avance» es `0`, no la
+ * falta del dato.
+ *
+ * El avance no toca el estado ni el estado toca el avance: este validador solo
+ * admite `progress`, y cualquier otro campo del cuerpo se descarta.
+ */
+export const updateTaskProgressValidator = vine.create({
+  progress: vine.number({ strict: true }).withoutDecimals().range([0, 100]),
+})
+
+/**
  * Un día del calendario, sin hora. `vine.date()` comprueba el calendario de
  * verdad y no solo la forma: `2026-02-31` encaja en cualquier patrón `AAAA-MM-DD`
  * y no existe.

@@ -10,6 +10,7 @@ import * as api from '@/lib/api'
 import { ApiError } from '@/lib/api'
 import { useAuth } from '@/auth/use-auth'
 import { FieldError } from '@/components/field-error'
+import { TaskProgressBar, TaskProgressSlider } from '@/components/task-progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,6 +45,11 @@ export function TaskPage() {
   // devolvería el valor viejo en cada pulsación y se pelearía con quien está
   // tecleando la fecha. El borrador deja escribir; solo se guarda lo completo.
   const [dueDateDraft, setDueDateDraft] = useState('')
+  // El avance mientras se arrastra, aparte del guardado: arrastrar pinta, y
+  // solo soltar guarda. Sin esto se mandaría una petición por cada paso.
+  const [progressDraft, setProgressDraft] = useState<number | null>(null)
+  const [progressError, setProgressError] = useState<string | null>(null)
+  const [isSavingProgress, setSavingProgress] = useState(false)
 
   const taskId = Number(id)
 
@@ -107,6 +113,37 @@ export function TaskPage() {
     }
   }
 
+  const saveProgress = async (progress: number) => {
+    if (!token || !task) return
+
+    setProgressDraft(null)
+    if (progress === task.progress) return
+
+    const previous = task
+
+    // Igual que la fecha: se pinta ya y, si el servidor no lo acepta, vuelve
+    // al avance de verdad en vez de quedarse mintiendo.
+    setTask({ ...task, progress })
+    setSavingProgress(true)
+    setProgressError(null)
+
+    try {
+      const updated = await api.updateTaskProgress(task.id, progress, token)
+      // La respuesta tiene forma de lista y no trae el vencimiento: se mezcla
+      // sobre la tarea abierta en lugar de sustituirla.
+      setTask((current) => (current ? { ...current, ...updated } : current))
+    } catch (error: unknown) {
+      setTask(previous)
+      setProgressError(
+        error instanceof ApiError
+          ? (error.fieldErrors.progress ?? error.message)
+          : 'No se ha podido guardar el avance. Inténtalo de nuevo.',
+      )
+    } finally {
+      setSavingProgress(false)
+    }
+  }
+
   const handleDueDateChange = (value: string) => {
     setDueDateDraft(value)
 
@@ -167,6 +204,13 @@ export function TaskPage() {
                 <span aria-hidden="true">·</span>
                 <span>{TASK_STATUS_LABELS[task.status]}</span>
               </div>
+              {/* La misma barra que en la fila de la lista, para que el avance
+                  se lea igual en los dos sitios. */}
+              <TaskProgressBar
+                value={progressDraft ?? task.progress}
+                label={task.title}
+                className="mt-2"
+              />
             </CardHeader>
 
             <CardContent className="grid gap-4">
@@ -182,6 +226,29 @@ export function TaskPage() {
                   </AlertDescription>
                 </Alert>
               )}
+
+              <div className="grid gap-2">
+                {/* Sin `htmlFor`: el tirador no es un `input` y no se asocia a
+                    una etiqueta; su nombre lo lleva él mismo en `aria-label`.
+                    El porcentaje ya está escrito en la barra de arriba. */}
+                <span className="text-sm font-medium">Cambiar el avance</span>
+                <TaskProgressSlider
+                  value={progressDraft ?? task.progress}
+                  label={`Avance de «${task.title}»`}
+                  disabled={isSavingProgress}
+                  onChange={setProgressDraft}
+                  onCommit={saveProgress}
+                />
+                <FieldError
+                  id="progress-error"
+                  message={progressError ?? undefined}
+                />
+                {!progressError && (
+                  <p className="text-muted-foreground text-sm">
+                    {`Se guarda al soltar, sin confirmar nada. Va aparte del estado: moverlo no cambia «${TASK_STATUS_LABELS[task.status]}».`}
+                  </p>
+                )}
+              </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="dueDate">Fecha de vencimiento</Label>

@@ -69,6 +69,11 @@ export type Task = {
   id: number
   title: string
   status: TaskStatus
+  /**
+   * El avance, un entero de 0 a 100. Va aparte del estado y no se deduce de él:
+   * una tarea puede estar «Hecho» con 30 o «Pendiente» con 100.
+   */
+  progress: number
   assignee: TaskAssignee
   createdAt: string
   updatedAt: string

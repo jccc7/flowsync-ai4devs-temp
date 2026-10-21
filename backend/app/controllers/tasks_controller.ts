@@ -164,10 +164,11 @@ export default class TasksController {
     const { title } = await request.validateUsing(createTaskValidator)
     const user = auth.getUserOrFail()
 
-    // El estado va explícito y no se deja al valor por defecto de la columna:
-    // el modelo recién creado no vuelve a leerse de la base de datos, así que
-    // ese defecto no llegaría a la respuesta.
-    const task = await Task.create({ title, status: 'pending', assigneeId: user.id })
+    // El estado y el avance van explícitos y no se dejan al valor por defecto de
+    // la columna: el modelo recién creado no vuelve a leerse de la base de datos,
+    // así que ese defecto no llegaría a la respuesta. El avance no sale del
+    // cuerpo: toda tarea nace en 0 aunque la petición traiga otro.
+    const task = await Task.create({ title, status: 'pending', progress: 0, assigneeId: user.id })
     await task.load('assignee')
 
     // El estado se marca aparte y el cuerpo se devuelve: `serialize()` entrega
