@@ -35,10 +35,10 @@ export function TaskProgressBar({
         value={value}
         max={100}
         aria-label={`Avance de «${label}»`}
-        className="bg-primary/20 relative h-2 w-full overflow-hidden rounded-full"
+        className="bg-progress/20 relative h-2 w-full overflow-hidden rounded-full"
       >
         <ProgressPrimitive.Indicator
-          className="bg-primary h-full w-full transition-transform"
+          className="bg-progress h-full w-full transition-transform"
           style={{ transform: `translateX(-${100 - value}%)` }}
         />
       </ProgressPrimitive.Root>
@@ -86,12 +86,12 @@ export function TaskProgressSlider({
       className="relative flex w-full touch-none items-center py-2 select-none data-[disabled]:opacity-50"
     >
       <SliderPrimitive.Track className="bg-muted relative h-1.5 grow overflow-hidden rounded-full">
-        <SliderPrimitive.Range className="bg-primary absolute h-full" />
+        <SliderPrimitive.Range className="bg-progress absolute h-full" />
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
         aria-label={label}
         aria-valuetext={`${value} %`}
-        className="border-primary bg-background ring-ring/50 block size-4 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden"
+        className="border-progress bg-background ring-ring/50 block size-4 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden"
       />
     </SliderPrimitive.Root>
   )
