@@ -175,6 +175,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/task_statuses_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'tasks.task_progresses.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/tasks/:id/progress'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/task').updateTaskProgressValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/task').updateTaskProgressValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/task_progresses_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/task_progresses_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'tasks.task_due_dates.update': {
     methods: ["PUT"]
     pattern: '/api/v1/tasks/:id/due-date'

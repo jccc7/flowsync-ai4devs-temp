@@ -90,6 +90,12 @@ const routes = {
     tokens: [{"old":"/api/v1/tasks/:id/status","type":0,"val":"api","end":""},{"old":"/api/v1/tasks/:id/status","type":0,"val":"v1","end":""},{"old":"/api/v1/tasks/:id/status","type":0,"val":"tasks","end":""},{"old":"/api/v1/tasks/:id/status","type":1,"val":"id","end":""},{"old":"/api/v1/tasks/:id/status","type":0,"val":"status","end":""}],
     types: placeholder as Registry['tasks.task_statuses.update']['types'],
   },
+  'tasks.task_progresses.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/tasks/:id/progress',
+    tokens: [{"old":"/api/v1/tasks/:id/progress","type":0,"val":"api","end":""},{"old":"/api/v1/tasks/:id/progress","type":0,"val":"v1","end":""},{"old":"/api/v1/tasks/:id/progress","type":0,"val":"tasks","end":""},{"old":"/api/v1/tasks/:id/progress","type":1,"val":"id","end":""},{"old":"/api/v1/tasks/:id/progress","type":0,"val":"progress","end":""}],
+    types: placeholder as Registry['tasks.task_progresses.update']['types'],
+  },
   'tasks.task_due_dates.update': {
     methods: ["PUT"],
     pattern: '/api/v1/tasks/:id/due-date',

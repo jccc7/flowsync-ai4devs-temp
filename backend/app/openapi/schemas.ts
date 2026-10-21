@@ -59,6 +59,15 @@ export class Task {
   @ApiProperty({ enum: [...TASK_STATUSES], example: 'pending' })
   status!: string
 
+  @ApiProperty({
+    type: 'integer',
+    minimum: 0,
+    maximum: 100,
+    example: 40,
+    description: 'Avance en porcentaje, de 0 a 100. Independiente del estado; nace en 0.',
+  })
+  progress!: number
+
   @ApiProperty({ type: () => TaskAssignee })
   assignee!: TaskAssignee
 
@@ -88,6 +97,15 @@ export class TaskDetail {
 
   @ApiProperty({ enum: [...TASK_STATUSES], example: 'pending' })
   status!: string
+
+  @ApiProperty({
+    type: 'integer',
+    minimum: 0,
+    maximum: 100,
+    example: 40,
+    description: 'Avance en porcentaje, de 0 a 100. Independiente del estado; nace en 0.',
+  })
+  progress!: number
 
   @ApiProperty({
     type: 'string',
@@ -131,6 +149,15 @@ export class TrashedTask {
 
   @ApiProperty({ enum: [...TASK_STATUSES], example: 'pending' })
   status!: string
+
+  @ApiProperty({
+    type: 'integer',
+    minimum: 0,
+    maximum: 100,
+    example: 40,
+    description: 'Avance en porcentaje, de 0 a 100. Independiente del estado; nace en 0.',
+  })
+  progress!: number
 
   @ApiProperty({ type: () => TaskAssignee })
   assignee!: TaskAssignee
@@ -241,6 +268,18 @@ export class UpdateTaskStatusBody {
       'Cualquiera de los tres estados. Todas las transiciones valen, incluida la vuelta desde `done`.',
   })
   status!: string
+}
+
+export class UpdateTaskProgressBody {
+  @ApiProperty({
+    type: 'integer',
+    minimum: 0,
+    maximum: 100,
+    example: 40,
+    description:
+      'Un entero de 0 a 100. Se rechaza con 422, sin convertir ni recortar, un texto (`"50"`), un decimal, `null` o un valor fuera de rango. No cambia el estado.',
+  })
+  progress!: number
 }
 
 export class SetTaskDueDateBody {

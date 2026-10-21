@@ -23,6 +23,7 @@ de `POST /api/v1/auth/login` o de `POST /api/v1/auth/signup`.
 | `POST /tasks` | `{ "title": "..." }` | [`TasksController.store`](../../../backend/app/controllers/tasks_controller.ts) | `201` · la tarea creada |
 | `GET /tasks/:id` | `today=AAAA-MM-DD` en query, **obligatorio** | [`TasksController.show`](../../../backend/app/controllers/tasks_controller.ts) | `200` · la tarea con vencimiento |
 | `PATCH /tasks/:id/status` | `{ "status": "pending \| in_progress \| done" }` | [`TaskStatusesController.update`](../../../backend/app/controllers/task_statuses_controller.ts) | `200` · la tarea ya cambiada |
+| `PATCH /tasks/:id/progress` | `{ "progress": <entero de 0 a 100> }` | [`TaskProgressesController.update`](../../../backend/app/controllers/task_progresses_controller.ts) | `200` · la tarea con el avance ya fijado |
 | `PUT /tasks/:id/due-date` | `{ "dueDate": "AAAA-MM-DD" \| null, "today": "AAAA-MM-DD" }` | [`TaskDueDatesController.update`](../../../backend/app/controllers/task_due_dates_controller.ts) | `200` · la tarea con vencimiento |
 | `DELETE /tasks/:id` | — | [`TasksController.destroy`](../../../backend/app/controllers/tasks_controller.ts) | `200` · la tarea, ya en la papelera |
 | `GET /tasks/trash` | — | [`TaskTrashController.index`](../../../backend/app/controllers/task_trash_controller.ts) | `200` · la papelera |
@@ -36,10 +37,11 @@ Toda respuesta va envuelta en `{ "data": ... }` por el serializer de
 Son objetos distintos a propósito, no el mismo con campos opcionales:
 
 - **Tarea de lista** — [`TaskTransformer`](../../../backend/app/transformers/task_transformer.ts).
-  La devuelven `GET /tasks`, `POST /tasks` y `PATCH /tasks/:id/status`. **No lleva vencimiento.**
+  La devuelven `GET /tasks`, `POST /tasks`, `PATCH /tasks/:id/status` y `PATCH /tasks/:id/progress`.
+  **No lleva vencimiento.**
 
   ```json
-  { "id": 1, "title": "Revisar el informe", "status": "pending",
+  { "id": 1, "title": "Revisar el informe", "status": "pending", "progress": 0,
     "createdAt": "...", "updatedAt": "...",
     "assignee": { "id": 1, "fullName": "Ada Lovelace", "initials": "AL" } }
   ```
@@ -49,7 +51,7 @@ Son objetos distintos a propósito, no el mismo con campos opcionales:
   son las dos únicas que exigen `today`.
 
   ```json
-  { "id": 1, "title": "Revisar el informe", "status": "in_progress",
+  { "id": 1, "title": "Revisar el informe", "status": "in_progress", "progress": 40,
     "dueDate": "2026-08-19", "isOverdue": true,
     "createdAt": "...", "updatedAt": "...",
     "assignee": { "id": 1, "fullName": "Ada Lovelace", "initials": "AL" } }
@@ -60,7 +62,7 @@ Son objetos distintos a propósito, no el mismo con campos opcionales:
   lleva vencimiento. La tarea viva no tiene `deletedAt`.
 
   ```json
-  { "id": 1, "title": "Revisar el informe", "status": "pending",
+  { "id": 1, "title": "Revisar el informe", "status": "pending", "progress": 0,
     "deletedAt": "...", "createdAt": "...", "updatedAt": "...",
     "assignee": { "id": 1, "fullName": "Ada Lovelace", "initials": "AL" } }
   ```
@@ -69,9 +71,11 @@ El `assignee` sale siempre por
 [`TaskAssigneeTransformer`](../../../backend/app/transformers/task_assignee_transformer.ts), que lo
 recorta a `id`, `fullName` e `initials` — nunca el email.
 
+Las tres llevan `progress`, el avance en porcentaje: un entero de 0 a 100 que nace en 0.
+
 ### El contrato, servido
 
-Las ocho operaciones están anotadas con los decoradores de `@foadonis/openapi` sobre los propios
+Las nueve operaciones están anotadas con los decoradores de `@foadonis/openapi` sobre los propios
 controladores, así que el documento servido en **`/api.json`** (y la interfaz en `/api`) lleva el
 parámetro `status` con sus tres valores, el `today` obligatorio, los cuerpos de las escrituras y los
 códigos `200`/`201`/`401`/`404`/`422` de cada operación, cada uno con la forma de lo que devuelve.
@@ -109,8 +113,10 @@ qué exige cada una, se abre el enlace de la derecha.
 | La lista no lleva vencimiento | Dos transformers separados, no uno con campos opcionales | [La lista no lleva el vencimiento](../../../openspec/specs/tasks/spec.md#requirement-la-lista-no-lleva-el-vencimiento) |
 | Acotar por estado | `listTasksValidator` y la rama de `TasksController.index` | [Acotar la lista por estado](../../../openspec/specs/tasks/spec.md#requirement-acotar-la-lista-por-estado) |
 | Borrar manda a la papelera, no quita la fila | `TasksController.destroy`: marca `tasks.deleted_at` (migración `add_deleted_at_to_tasks_table`). Cualquiera con sesión borra cualquier tarea | [change `add-task-trash`](../../../openspec/changes/add-task-trash/specs/tasks/spec.md#requirement-borrar-una-tarea-la-manda-a-la-papelera) |
-| Lo borrado no sale por ningún otro camino | **Por construcción, no por filtro en cada ruta**: `Task` lleva los hooks `before:find`/`before:fetch` (`Task.hideTrashed`) que excluyen lo borrado, y la papelera es otro modelo, `TrashedTask`, que solo ve lo borrado. Lista, filtros, `GET /tasks/:id`, `PATCH .../status` y `PUT .../due-date` lo heredan | [change `add-task-trash`](../../../openspec/changes/add-task-trash/specs/tasks/spec.md#requirement-lo-borrado-no-sale-por-ningún-otro-camino) |
+| Lo borrado no sale por ningún otro camino | **Por construcción, no por filtro en cada ruta**: `Task` lleva los hooks `before:find`/`before:fetch` (`Task.hideTrashed`) que excluyen lo borrado, y la papelera es otro modelo, `TrashedTask`, que solo ve lo borrado. Lista, filtros, `GET /tasks/:id`, `PATCH .../status`, `PATCH .../progress` y `PUT .../due-date` lo heredan | [change `add-task-trash`](../../../openspec/changes/add-task-trash/specs/tasks/spec.md#requirement-lo-borrado-no-sale-por-ningún-otro-camino) |
 | Ver y restaurar la papelera | `TaskTrashController.index` / `.restore`. Restaurar quita solo la marca; una tarea que no está en la papelera es un 404 | [change `add-task-trash`](../../../openspec/changes/add-task-trash/specs/tasks/spec.md#requirement-la-papelera-se-consulta-y-se-restaura) |
+| El avance, entero de 0 a 100 y nace en 0 | Columna `tasks.progress` `smallint NOT NULL DEFAULT 0` con `CHECK tasks_progress_check` (migración `add_progress_to_tasks_table`); `TasksController.store` lo pone a 0 y el validador de creación no lo acepta. Viaja en los tres transformers | [change `add-task-progress`](../../../openspec/changes/add-task-progress/specs/tasks/spec.md#requirement-avance-de-una-tarea) |
+| Fijar el avance, estricto e independiente del estado | `updateTaskProgressValidator` (`vine.number({ strict: true }).withoutDecimals().range([0, 100])`: `"50"`, `42.5`, `null`, ausente o fuera de rango son 422, sin convertir ni recortar) y `TaskProgressesController.update`, que busca la tarea antes de validar (404 gana a 422) y no toca el estado. Cualquiera con sesión, sobre cualquier tarea; gana la última escritura | [change `add-task-progress`](../../../openspec/changes/add-task-progress/specs/tasks/spec.md#requirement-fijar-el-avance-de-una-tarea) |
 | Filtro válido sin resultados ≠ filtro inválido | **Sin cumplir hoy.** `listTasksValidator` declara `status: vine.string().optional()`, no un `vine.enum`, así que un estado inventado no se rechaza: llega al `where` y sale como lista vacía, que es justo lo que el requisito prohíbe. El comentario de `TasksController.index` afirma lo contrario | [Un estado que no existe se rechaza, no se responde vacío](../../../openspec/specs/tasks/spec.md#requirement-un-estado-que-no-existe-se-rechaza-no-se-responde-vacío) |
 
 En el frontend, la capability vive en [`pages/tasks-page.tsx`](../../../frontend/src/pages/tasks-page.tsx),
@@ -142,10 +148,12 @@ node ace test --tests="el responsable llega con su nombre y sus iniciales"
 ```
 
 Los tests de esta capability están en
-[`backend/tests/functional/tasks/`](../../../backend/tests/functional/tasks/). **Hoy hay dos
+[`backend/tests/functional/tasks/`](../../../backend/tests/functional/tasks/). **Hoy hay cuatro
 ficheros**: `assignee.spec.ts`, que cubre 3 de los 124 scenarios de la spec (los del requisito *Lo que
-cada tarea muestra de su responsable*), y `trash.spec.ts`, con 17 tests de la papelera (E2-10): un test
-por cada criterio de la historia que se puede probar contra la API, y CA-8c recorrido ruta por ruta.
+cada tarea muestra de su responsable*); `overdue.spec.ts`, con 7 tests del vencimiento; `trash.spec.ts`,
+con 17 tests de la papelera (E2-10): un test por cada criterio de la historia que se puede probar
+contra la API, y CA-8c recorrido ruta por ruta; y `progress.spec.ts`, con 13 tests del avance, uno por
+cada scenario de API del change `add-task-progress`.
 Todo lo demás está sin cubrir, así que el verde de la suite **no** es señal de que la capability cumpla
 su spec.
 
@@ -190,6 +198,11 @@ curl -s "http://localhost:3333/api/v1/tasks/1?today=2026-08-20" -H "Authorizatio
 curl -s -X PATCH http://localhost:3333/api/v1/tasks/1/status \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"status":"in_progress"}'
+
+# 5b. Fijar el avance — independiente del estado; "50" o 42.5 dan 422
+curl -s -X PATCH http://localhost:3333/api/v1/tasks/1/progress \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"progress":40}'
 
 # 6. Poner una fecha ya pasada: vuelve con isOverdue true
 curl -s -X PUT http://localhost:3333/api/v1/tasks/1/due-date \

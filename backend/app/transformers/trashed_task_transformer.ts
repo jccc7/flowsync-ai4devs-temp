@@ -17,7 +17,15 @@ import TaskAssigneeTransformer from '#transformers/task_assignee_transformer'
 export default class TrashedTaskTransformer extends BaseTransformer<Task | TrashedTask> {
   toObject() {
     return {
-      ...this.pick(this.resource, ['id', 'title', 'status', 'deletedAt', 'createdAt', 'updatedAt']),
+      ...this.pick(this.resource, [
+        'id',
+        'title',
+        'status',
+        'progress',
+        'deletedAt',
+        'createdAt',
+        'updatedAt',
+      ]),
       assignee: TaskAssigneeTransformer.transform(this.whenLoaded(this.resource.assignee)),
     }
   }

@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { ChevronRightIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { TaskProgressBar } from '@/components/task-progress'
 import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
@@ -53,6 +54,13 @@ export function TaskItem({ task, onChangeStatus, isBusy }: TaskItemProps) {
           <p className="text-muted-foreground truncate text-sm">
             {task.assignee.fullName ?? 'Sin nombre'}
           </p>
+          {/* Solo se lee: el avance se cambia dentro de la tarea. Un segundo
+              control en la fila competiría con los tres botones de estado. */}
+          <TaskProgressBar
+            value={task.progress}
+            label={task.title}
+            className="mt-1.5 w-48 max-w-full"
+          />
         </div>
       </div>
 

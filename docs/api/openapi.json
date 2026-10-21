@@ -53,6 +53,13 @@
             ],
             "example": "pending"
           },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 40,
+            "description": "Avance en porcentaje, de 0 a 100. Independiente del estado; nace en 0."
+          },
           "assignee": {
             "$ref": "#/components/schemas/TaskAssignee"
           },
@@ -69,6 +76,7 @@
           "id",
           "title",
           "status",
+          "progress",
           "assignee",
           "createdAt",
           "updatedAt"
@@ -156,6 +164,13 @@
             ],
             "example": "pending"
           },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 40,
+            "description": "Avance en porcentaje, de 0 a 100. Independiente del estado; nace en 0."
+          },
           "dueDate": {
             "type": "string",
             "format": "date",
@@ -183,6 +198,7 @@
           "id",
           "title",
           "status",
+          "progress",
           "dueDate",
           "isOverdue",
           "assignee",
@@ -284,6 +300,13 @@
             ],
             "example": "pending"
           },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 40,
+            "description": "Avance en porcentaje, de 0 a 100. Independiente del estado; nace en 0."
+          },
           "assignee": {
             "$ref": "#/components/schemas/TaskAssignee"
           },
@@ -305,6 +328,7 @@
           "id",
           "title",
           "status",
+          "progress",
           "assignee",
           "deletedAt",
           "createdAt",
@@ -341,6 +365,21 @@
         },
         "required": [
           "status"
+        ]
+      },
+      "UpdateTaskProgressBody": {
+        "type": "object",
+        "properties": {
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 40,
+            "description": "Un entero de 0 a 100. Se rechaza con 422, sin convertir ni recortar, un texto (`\"50\"`), un decimal, `null` o un valor fuera de rango. No cambia el estado."
+          }
+        },
+        "required": [
+          "progress"
         ]
       },
       "SetTaskDueDateBody": {
@@ -932,6 +971,81 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/UpdateTaskStatusBody"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tasks/{id}/progress": {
+      "patch": {
+        "summary": "Fijar el avance de una tarea",
+        "description": "Cualquier cuenta con sesión fija el avance de cualquier tarea, sea o no la responsable, a un entero de 0 a 100. Es independiente del estado: fijarlo a 100 no pasa la tarea a `done`, y cambiar el estado no lo mueve. El título, el responsable, el estado y la fecha no se tocan. Responde con la forma de lista, sin fecha ni condición de vencida, así que no pide día de referencia.",
+        "tags": [
+          "TaskProgresses"
+        ],
+        "responses": {
+          "200": {
+            "description": "La tarea con el avance ya fijado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Falta el token o no es válido. Nada cambia.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe ninguna tarea viva con ese identificador (las de la papelera tampoco cuentan). Se comprueba antes que el cuerpo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El avance falta, es `null`, no es un número (`\"50\"` tampoco vale), tiene decimales o está fuera de 0..100. No se convierte, no se redondea ni se recorta: la tarea conserva el avance que tenía.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskProgressBody"
               }
             }
           }

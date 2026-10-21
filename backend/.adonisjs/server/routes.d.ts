@@ -18,6 +18,7 @@ export type ScannedRoutes = {
     'tasks.tasks.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'tasks.task_trash.restore': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'tasks.task_statuses.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'tasks.task_progresses.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'tasks.task_due_dates.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'tasks.task_comments.index': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'tasks.task_comments.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -55,6 +56,7 @@ export type ScannedRoutes = {
   }
   PATCH: {
     'tasks.task_statuses.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'tasks.task_progresses.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PUT: {
     'tasks.task_due_dates.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

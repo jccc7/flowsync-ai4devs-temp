@@ -9,6 +9,7 @@ export const controllers = {
   Profile: () => import('#controllers/profile_controller'),
   TaskComments: () => import('#controllers/task_comments_controller'),
   TaskDueDates: () => import('#controllers/task_due_dates_controller'),
+  TaskProgresses: () => import('#controllers/task_progresses_controller'),
   TaskStatuses: () => import('#controllers/task_statuses_controller'),
   TaskTrash: () => import('#controllers/task_trash_controller'),
   Tasks: () => import('#controllers/tasks_controller'),

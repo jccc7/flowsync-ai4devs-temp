@@ -112,6 +112,17 @@ function dia(fecha: DateTime) {
   return toCalendarDay(fecha)
 }
 
+/**
+ * Un avance coherente con el estado: lo pendiente no ha empezado, lo hecho está
+ * completo y lo que está en curso queda entre medias, en saltos de 5 como los que
+ * daría una persona moviendo una barra.
+ */
+function avanceSegunEstado(faker: Faker, status: TaskStatus) {
+  if (status === 'pending') return 0
+  if (status === 'done') return 100
+  return faker.number.int({ min: 2, max: 18 }) * 5
+}
+
 function enLosUltimosDias(faker: Faker, dias: number) {
   const ahora = DateTime.now()
   const inicio = ahora.minus({ days: dias })
@@ -137,6 +148,14 @@ function enLosUltimosDias(faker: Faker, dias: number) {
  *   Una fecha anterior a la creación es válida (FS-118 CA-13).
  * - **Responsable siempre registrado.** El FK lo exige; la relación `assignee` lo
  *   crea con `UserFactory` si no se da uno (RF-7, RF-10).
+ * - **Avance coherente con el estado.** `progress` solo exige un entero de 0 a 100
+ *   (el `CHECK tasks_progress_check`); el producto los deja independientes, pero un
+ *   dato de demostración en que lo hecho va al 30 % o lo pendiente al 80 % solo
+ *   confunde. Por eso, si no se fija a mano: `pending` → 0, `in_progress` → de 10 a
+ *   90 en múltiplos de 5, `done` → 100. Se calcula al final, con el estado ya
+ *   definitivo. Un `progress` puesto por `merge` o por un estado se respeta tal
+ *   cual, también si no casa con el estado: es la forma de probar que no están
+ *   acoplados. El estado `conAvance` la deja en curso con un avance intermedio.
  * - **Fechas coherentes.** `created_at` dentro de los últimos 90 días, nunca en el
  *   futuro; `updated_at` nunca anterior a `created_at` (el esquema no lo comprueba),
  *   y una tarea que sigue en «Pendiente» no se ha tocado desde que nació.
@@ -173,6 +192,10 @@ export const TaskFactory = factory
   .state('hecha', (task) => {
     task.status = 'done'
   })
+  .state('conAvance', (task, { faker }) => {
+    task.status = 'in_progress'
+    task.progress = avanceSegunEstado(faker, 'in_progress')
+  })
   .state('sinFecha', (task) => {
     task.dueDate = null
   })
@@ -200,7 +223,11 @@ export const TaskFactory = factory
   })
   .after('make', (_factory, task, { faker }) => {
     // Va aquí y no en `define` porque el estado puede cambiar por `merge` o por un
-    // estado, y `updated_at` depende del estado definitivo.
+    // estado, y el avance y `updated_at` dependen del estado definitivo.
+    if (task.$attributes.progress === undefined) {
+      task.progress = avanceSegunEstado(faker, task.status)
+    }
+
     if (task.status === 'pending') {
       task.updatedAt = task.createdAt
       return

@@ -178,6 +178,7 @@ test.group('Tasks | papelera', (group) => {
       'createdAt',
       'deletedAt',
       'id',
+      'progress',
       'status',
       'title',
       'updatedAt',

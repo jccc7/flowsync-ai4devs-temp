@@ -288,3 +288,19 @@ export function updateTaskStatus(
     token,
   }).then((response) => response.data)
 }
+
+/**
+ * Fija el avance de una tarea, de 0 a 100. Devuelve la forma de lista: no lleva
+ * vencimiento, así que no manda día de referencia.
+ */
+export function updateTaskProgress(
+  id: number,
+  progress: number,
+  token: string,
+): Promise<Task> {
+  return request<{ data: Task }>(`/api/v1/tasks/${id}/progress`, {
+    method: 'PATCH',
+    body: { progress },
+    token,
+  }).then((response) => response.data)
+}

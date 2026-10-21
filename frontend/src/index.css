@@ -26,6 +26,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-progress: var(--progress);
 }
 
 :root {
@@ -48,6 +49,8 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  /* Azul marino: el relleno de la barra de avance y su deslizador. */
+  --progress: oklch(0.3 0.12 264);
 }
 
 .dark {
@@ -69,6 +72,9 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
+  /* El mismo azul marino, más claro: sobre el fondo oscuro el de :root no llega
+     al contraste 3:1 que pide un elemento que no es texto. */
+  --progress: oklch(0.55 0.14 264);
 }
 
 @layer base {
