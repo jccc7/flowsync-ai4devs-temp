@@ -146,6 +146,15 @@ El typecheck vive dentro de `npm run build`; el lint es **oxlint** (`.oxlintrc.j
 
 Stack: **Tailwind v4** (plugin de Vite, sin `tailwind.config.js`; los tokens viven en `src/index.css`), **shadcn/ui** (`components.json`, componentes generados en `src/components/ui/` — se traen con `npx shadcn@latest add <componente>` y no se editan a mano) y **react-router**. El alias `@/*` → `src/*` está declarado a la vez en `tsconfig.app.json` (sin `baseUrl`, deprecado en TS 6) y en `vite.config.ts`.
 
+**De dónde sale una pieza de interfaz nueva.** Se recorre este orden y se para en el primer paso que sirva:
+
+1. **Lo que ya hay.** Un componente de `src/components/` o de `src/components/ui/` que haga lo mismo se reutiliza, aunque haya que pasarle una prop más. No se escribe uno paralelo.
+2. **shadcn/ui**, con `npx shadcn@latest add <componente>`. Antes de usar lo que genera, se revisa: el diff de `package.json`, los imports (`cn` sale de `@/lib/utils`) y que la pieza sea accesible (valor anunciado, nombre en cada control). La CLI ya instaló una vez un paquete npm ajeno llamado `cn` y generó un `progress` sin `aria-valuenow` y un `slider` con el tirador sin nombre.
+3. **Los primitivos de `radix-ui`**, que ya es dependencia, en un componente propio de `src/components/`. Es el camino cuando lo que trae shadcn no vale y arreglarlo obligaría a editar `src/components/ui/`, que no se toca a mano (ejemplo: `src/components/task-progress.tsx`).
+4. **Nada más sin preguntar.** Ni librerías de componentes, ni de iconos distintas de `lucide-react`, ni HTML a medida para algo que Radix ya resuelve (foco, teclado, ARIA).
+
+Los colores, en cualquiera de los cuatro casos, salen de los tokens de `src/index.css`. El hook `colores-a-pelo.sh` avisa si se escribe uno literal, pero de dónde sale la pieza no lo puede comprobar ningún script: es una decisión, y por eso está escrita aquí.
+
 Organización de `src/`:
 
 - `lib/api.ts` — único punto de contacto con el backend: envuelve `fetch`, desenvuelve el `{ data }` del serializer, adjunta el `Authorization: Bearer` y traduce los errores de VineJS/auth a `ApiError` con `message` ya en castellano y `fieldErrors` por campo. Toda llamada nueva a la API se añade aquí, no en los componentes.
