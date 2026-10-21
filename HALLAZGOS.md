@@ -6,21 +6,14 @@ porque lo que se discute en el directo es dónde te chocaste.
 
 Escribe **una sola línea por punto**, con tus palabras y con lo que mediste, no con lo que suponías.
 
-## 1. Las filas que cambian y la rama
+## 1. Dónde aterrizó la pieza y con qué valores, con los números que contaste: dentro o fuera del catálogo, cuántos colores a pelo había antes y cuántos después.
 
-Cuántas filas cambian de valor en tu cambio de esquema, medido con una consulta, y en qué rama del
-árbol de reversibilidad cae. Si tu migración no toca datos, dilo tal cual: también es una respuesta.
+- No encontré modificaciones en los archivos obtenidos en la Parte A y tampoco en la cantidad de valores recuperados, en ambos casos se mantuvieron
 
--
+## 2. Qué crees que decidió eso. Es la pregunta interesante del ejercicio, y la respuesta no está en ningún sitio: se deduce mirando qué información tenía delante el agente cuando escribió. Si tu resultado no es el que esperabas al leer las lecciones, dilo tal cual: es el dato del ejercicio.
 
-## 2. Lo que la batería de pruebas no podía ver
+- En mi caso parece que el modelo reutilizó piezas que ya existían, si creo nuevo archivos pero reutilizó lo que ya existía.
 
-Una cosa que la batería de pruebas no podía ver. Si no encontraste ninguna, escribe qué buscaste y dónde.
+## 3. Qué avisó el guardarraíl y qué no pudo ver. Un script solo caza lo que es mecánico; lo demás se queda fuera, y saber cuál es ese resto es la mitad del asunto.
 
--
-
-## 3. Tu duda
-
-De qué dudaste, o qué no pudiste comprobar.
-
--
+- Una vez que ya se creo el hook y la regla en el archivo Claude.md e intente realizar una modificación de un color, el modelo aviso de forma correcta que la petición no era del todo válida pero la corrigió para seguir lso estandares que previamente ya se le habían definido.
