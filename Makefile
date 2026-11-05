@@ -14,7 +14,7 @@ BACKEND  := backend
 FRONTEND := frontend
 
 .DEFAULT_GOAL := help
-.PHONY: test-unit test-e2e ui test-ui test-web hooks help setup start install env db-up db-down migrate seed db-readonly copia-produccion test image image-run image-stop ci-lint clean
+.PHONY: test-unit test-e2e ui test-ui test-web hooks help setup start install env db-up db-down migrate seed db-readonly copia-produccion test image image-run image-stop ci-lint otel-up otel-down clean
 
 # La ayuda se genera a partir de los comentarios `## ...` de cada target, para
 # que no haya un segundo listado que mantener a mano y que pueda divergir.
@@ -74,6 +74,15 @@ db-up: ## Levanta las bases de desarrollo (54410) y de pruebas (54411)
 # Sin `-v`: el volumen de desarrollo se conserva. La de pruebas es tmpfs y se vacía sola.
 db-down: ## Para las bases (la de desarrollo conserva sus datos)
 	@docker compose down
+
+# Destino local de las trazas (servicio `observability`, ver otel-collector.yaml).
+# Va aparte a propósito: ni `db-up` ni `setup` lo levantan, y la API arranca sin
+# él. Las trazas salen en `docker compose logs -f observability`.
+otel-up: ## Levanta el colector de trazas OpenTelemetry (4317 gRPC, 4318 HTTP)
+	@docker compose up -d observability
+
+otel-down: ## Para el colector de trazas
+	@docker compose stop observability
 
 # La de pruebas es efímera: tras un `db-down` está vacía y hay que migrarla otra
 # vez, por eso `test` también pasa por aquí. NODE_ENV=test hace que Adonis cargue

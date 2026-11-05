@@ -1,217 +1,236 @@
-<!-- Generado desde la lección de ejercicio del módulo: no se edita a mano. -->
+✍️ Ejercicio FlowSync: instrumenta el backend y escribe su objetivo de nivel de servicio 🔴
 
-# Ejercicio FlowSync: empaqueta la API y escribe su pipeline
+Repositorio: FlowSync
 
-Es la última lección del módulo y la única que se hace con el portátil delante. Trae el setup del entorno, la tarea y cómo se entrega, todo en un sitio. Tiene dos partes técnicas, la imagen (Parte A) y el pipeline (Parte B), y una última con tres líneas sobre lo que has visto (Parte C).
+Es la última lección del módulo y la única que harás con el portátil delante. Aquí tienes cómo preparar el entorno, qué debes hacer y cómo entregar el ejercicio. Consta de tres partes: instrumentar el backend (Parte A), definir un objetivo de nivel de servicio (Parte B) y escribir tres líneas sobre lo que has observado (Parte C).
 
-> 📌 **Ve guardando cada prompt tal cual lo lanzas**, desde el primero. Se entregan, y reescribirlos al final de memoria no sirve: lo que se revisa es **cómo lo pediste**, no la versión limpia que recuerdas. Hay un archivo esperándolos en el propio repositorio.
+📌 Guarda cada prompt tal como lo envías, desde el primero. Forman parte de la entrega, así que no sirve reconstruirlos de memoria al terminar. Lo que se revisa es cómo se lo pediste al agente, no una versión corregida después. El repositorio ya incluye un archivo para guardarlos.
 
----
+🔁 Cómo funciona este módulo
+El ejercicio tiene tres etapas. Conviene saber qué harás en cada una:
 
-## 🔁 Cómo funciona este módulo
+1. Lo intentas tú. Trabajas sobre el proyecto que encontrarás más abajo, con tu agente y un tiempo limitado. Entrega lo que consigas, aunque esté incompleto. No se puntúa por terminarlo: en el directo se revisarán los problemas que encontraste.
 
-Hay tres momentos, y saberlos cambia cómo aprovechas cada uno.
+2. Lo ves resuelto en el directo. El mentor instrumentará el mismo backend y definirá el mismo objetivo. Si no lo conseguiste, podrás ver cómo hacerlo. Por eso conviene mirar sin teclear: después tendrás tiempo para repetirlo.
 
-**1. Lo intentas tú.** Sobre el proyecto de abajo, con tu agente y con el reloj puesto. Entregas lo que te salga, **con lo que tenga**. La entrega a medias no es un problema: este paso no se puntúa por completarlo, y lo que se discute en vivo son las cosas con las que te chocaste.
+3. Lo replicas. Recibirás por escrito los prompts del mentor para volver a tu entorno y repetir el proceso con calma.
 
-**2. Lo ves resuelto en el directo.** El mentor empaqueta esta misma API y escribe este mismo pipeline, sobre este mismo proyecto, y lo despliega después contra una plataforma, que es el paso que tú no haces. Si a ti no te salió, ahí ves que se puede y cómo. Por eso conviene **mirar sin teclear**: lo vas a repetir con calma después.
+⚠ En el paso 3 no esperes resultados idénticos. La inteligencia artificial (IA) no es determinista: incluso con el mismo prompt pueden cambiar los archivos modificados, la redacción del objetivo o la cantidad de trazas que aparecen en el destino. También hay otra fuente de variación: la primera traza suele no llegar, y averiguar por qué forma parte del ejercicio. Lo importante es repetir el proceso, no obtener exactamente la misma salida.
 
-**3. Lo replicas.** Los prompts que use el mentor te llegan por escrito. Con ellos vuelves a tu entorno y rehaces el recorrido, que es donde se asienta.
+🛠 Deja el entorno listo
+1. Comprueba lo que necesita tu máquina
+Necesitas cuatro cosas. Compruébalas antes de clonar el proyecto para evitar errores posteriores:
 
-> ⚠️ **En el paso 3 no esperes salidas idénticas, y no es un fallo tuyo.** La inteligencia artificial (IA) no es determinista: con el mismo prompt cambian el orden de las capas del Dockerfile, los nombres de las etapas y hasta cuánto acaba pesando la imagen. Lo que se repite es la forma: dos etapas, una lista de variables que la aplicación reclama al arrancar sin ellas, y cinco trabajos en el pipeline. Lo que se repite es **la forma del recorrido**, no el texto.
+Docker en ejecución: docker ps. Si aparece Cannot connect to the Docker daemon, comprueba que Docker esté instalado y arrancado. Puedes instalarlo desde https://docs.docker.com/get-started/get-docker/.
 
----
+Node.js 24 o superior: node -v. La capa de base de datos exige Node.js 24 como mínimo. Con versiones anteriores, la instalación puede mostrar advertencias y el arranque fallar sin indicar claramente el motivo. Descárgalo desde https://nodejs.org.
 
-## 🛠️ Deja el entorno listo
+make: make --version. Si no está instalado, en macOS puedes obtenerlo con las herramientas de línea de comandos (xcode-select --install); en Linux, con build-essential o su equivalente.
 
-### 1. Comprueba lo que necesita tu máquina
+Una cuenta de GitHub: entregarás el ejercicio mediante un pull request desde tu propio fork al repositorio del curso.
 
-Cuatro cosas, cada una con el comando que dice si la tienes y el síntoma de tenerla mal. Compruébalas **antes** de clonar nada: las cuatro fallan más tarde y con mensajes que no mencionan la causa.
+💻 Compatibilidad con sistemas operativos. En macOS y Linux puedes seguir los comandos directamente. En Windows debes utilizar WSL (Windows Subsystem for Linux, el subsistema de Linux para Windows). Los atajos del proyecto utilizan comandos de shell como cp, test y rm. Aunque algunos existen en PowerShell, no tienen el mismo comportamiento y los atajos no funcionan allí tal como están escritos.
 
-- **Docker, corriendo**: `docker ps`. Si dice `Cannot connect to the Docker daemon`, está instalado y **apagado**. Ojo, que ese mensaje es igual que el de no tenerlo. Se instala desde `https://docs.docker.com/get-started/get-docker/`. En este módulo Docker no es solo para las bases de datos: **construye y arranca la imagen de la API y ejecuta el validador del pipeline**, así que sin él no hay ejercicio.
-- **Node.js 24 o superior**: `node -v`. La capa de base de datos de este proyecto declara **24 como mínimo**, así que con versiones anteriores la instalación avisa y el arranque puede morir con errores que no hablan de versiones. Se instala desde `https://nodejs.org`. Y aquí importa doble: la imagen que vas a construir lleva dentro esa misma línea de Node.
-- **`make`**: `make --version`. Si no responde: en macOS viene con las herramientas de línea de comandos (`xcode-select --install`); en Linux, con el paquete `build-essential` o equivalente.
-- **Una cuenta de GitHub**: la entrega es un pull request desde tu propio fork hacia el repositorio del curso.
+⚠ Todo debe estar dentro de WSL: el repositorio clonado, Node.js y make. Lo que instales en Windows no estará necesariamente disponible en esa terminal. Clona el proyecto dentro del sistema de archivos de Linux (~/…), no en /mnt/c, para evitar que la instalación de dependencias sea demasiado lenta.
 
-> 🖥️ **Dónde funciona esto, porque no es en todas partes igual.** En **macOS** y en **Linux**, tal cual. En **Windows**, **dentro de WSL** (*Windows Subsystem for Linux*, el subsistema de Linux para Windows), y esto no es una preferencia: los atajos del proyecto están escritos con órdenes de shell de macOS y Linux (`cp`, `test`, `rm`), así que **en PowerShell no funcionan**.
->
-> Y la parte que se olvida: **todo tiene que estar dentro de WSL**, no solo el último comando. El clon, Node, Docker y `make`. Lo que instales en Windows no existe dentro de esa terminal. Clona además dentro del sistema de ficheros de Linux (`~/…`) y no en `/mnt/c`, o la instalación de dependencias irá muy lenta.
+📦 El destino de las trazas es pequeño y no tiene interfaz gráfica. Utilizarás el recolector de OpenTelemetry, con la imagen Docker otel/opentelemetry-collector-contrib:0.162.0. La descarga ronda los 100 MB (medición del 20 de octubre de 2026: 103 MB en Mac ARM y 113 MB en Intel).
 
-> 🔎 **Para este ejercicio no hace falta instalar nada más, y no hace falta ninguna cuenta en ninguna plataforma de despliegue.** El validador de workflows corre dentro de su propia imagen de Docker, así que no se instala. Y la parte que sí usa una plataforma (declarar la infraestructura y pedirle un plan) **queda fuera del ejercicio a propósito**: necesita una cuenta, y crearla trae condiciones que conviene conocer antes. Están en la caja del final de la tarea, para cuando llegues a esa parte.
+Recibe trazas mediante el protocolo estándar y las escribe en sus propios registros con el exportador debug. Las consultarás con docker compose logs, no desde el navegador. Si quieres, descárgala antes de empezar con docker pull otel/opentelemetry-collector-contrib:0.162.0.
 
-### 2. Forkea y clona el proyecto
+🔎 No necesitas instalar nada más para este ejercicio. El proyecto incluye los comandos necesarios. El analizador de seguridad se instalará más adelante, cuando repliques los prompts del mentor. Su instalación se explicará en el archivo que recibirás entonces.
 
-Se trabaja sobre **tu propio fork**, porque sobre el repositorio del curso no tienes permiso de escritura: la entrega es un pull request desde él hacia el del curso.
+2. Haz un fork y clona el proyecto
+Trabajarás sobre tu propio fork, porque no tienes permisos de escritura en el repositorio del curso. Desde él abrirás el pull request de entrega.
 
-1. Entra en **https://github.com/lidr-academy-temp/flowsync-ai4devs** y pulsa **Fork**.
-2. Clona **tu fork** y entra en la carpeta.
-3. Añade el repositorio original como `upstream` y trae de ahí la rama de partida:
+Entra en https://github.com/LIDR-academy-temp/flowsync-ai4devs y pulsa Fork.
 
-```bash
-git remote add upstream https://github.com/lidr-academy-temp/flowsync-ai4devs.git
+Clona tu fork y entra en la carpeta del proyecto.
+
+Añade el repositorio del curso como upstream y descarga la rama de partida:
+
+git remote add upstream https://github.com/LIDR-academy-temp/flowsync-ai4devs.git
 git fetch upstream
-git checkout -b s13/start upstream/s13/start
-```
+git checkout -b s14/start upstream/s14/start
+🚨 La rama de partida se obtiene de upstream, no de tu fork. El formulario de Fork de GitHub trae marcada la casilla de copiar solo la rama por defecto, así que tu fork se lleva main y nada más.
 
-> 🚨 **La rama de partida se trae de `upstream`, no de tu fork.** El formulario de Fork de GitHub trae marcada la casilla de copiar **solo la rama por defecto**, así que tu fork se lleva `main` y nada más. Un `git checkout s13/start` a secas moriría con un `did not match any file(s) known to git` que **no menciona al fork por ningún lado**. Y aunque desmarcaras la casilla, un fork es **una foto del momento**: no recibe las ramas que se publiquen después.
+Si ejecutas git checkout s14/start sin haber descargado la rama, podrías recibir did not match any file(s) known to git, un error que no explica el problema del fork. Aunque copies todas las ramas, recuerda que un fork no incorpora automáticamente las ramas publicadas después.
 
-### 3. Instálalo y levántalo
+3. Instala y arranca el proyecto
+No hay un package.json en la raíz. Los comandos de npm se ejecutan dentro de backend/ y frontend/, pero el Makefile de la raíz ya se encarga de hacerlo.
 
-No hay `package.json` en la raíz. Los comandos de `npm` se ejecutan dentro de `backend/` y de `frontend/`, y el `Makefile` de la raíz ya lo hace por ti.
-
-```bash
-make setup   # solo la primera vez: instala dependencias, crea los .env, genera la clave de la aplicación, levanta las bases y migra
+make setup   # solo la primera vez: instala dependencias, crea los .env, levanta las bases y migra
 make db-up   # levanta las dos bases de datos y espera a que estén sanas
 make start   # levanta backend y frontend a la vez; Ctrl-C para los dos
 make help    # lista todos los atajos
-```
+make start mantiene ocupada esa terminal, así que abre otra para las demás comprobaciones.
 
-`make start` **se queda corriendo en esa terminal**: para lo demás, abre otra. En este módulo no hace falta tenerlo levantado para la tarea, pero conviene arrancarlo una vez para saber que el entorno está bien.
+Hay un detalle importante para el ejercicio: debes arrancar la aplicación después de instrumentarla, porque la instrumentación se carga al iniciar el servidor. Si ya estaba funcionando, detenla con Ctrl-C y ejecuta de nuevo make start cuando el agente termine.
 
-Comprueba que cada pieza vive:
+Comprueba que los servicios funcionan:
 
-- **Backend** en `http://localhost:3333`. Desde otra terminal: `curl -s http://localhost:3333`.
-- **Frontend** en `http://localhost:5173`. No hace falta abrirlo esta vez: la tarea va sobre la API (*Application Programming Interface*, la interfaz por la que el frontend habla con el servidor) y sobre los archivos del repositorio.
-- **Las dos bases de datos** en el **54410** (desarrollo) y el **54411** (pruebas). No se usa el 5432 a propósito: quien tenga un PostgreSQL suyo levantado se lo encontraría ocupado, y el error que vería no menciona a Docker por ningún lado. **La de desarrollo tiene que estar levantada durante la parte A**: la imagen que construyes arranca contra ella.
+Backend: http://localhost:3333. Desde otra terminal, ejecuta curl -s http://localhost:3333.
 
-Y la batería de pruebas del backend, una vez, antes de tocar nada. Es la mejor comprobación de que el entorno está bien montado, y además **es exactamente el comando que tu pipeline va a ejecutar** en la parte B:
+Frontend: http://localhost:5173. Ábrelo en el navegador y regístrate. Después buscarás en las trazas el tráfico que generes.
 
-```bash
+Bases de datos: utilizan los puertos 54410 (desarrollo) y 54411 (pruebas). Se evita el 5432 para no entrar en conflicto con una instalación local de PostgreSQL.
+
+Antes de modificar nada, ejecuta las pruebas del backend para comprobar que el entorno funciona:
+
 make test        # migra la base de pruebas y corre la suite entera del backend
 make test-unit   # solo la suite unitaria
 make test-e2e    # solo la funcional: peticiones reales contra la API
-```
+Las tres comprueban el backend, incluida la API (Application Programming Interface), la interfaz que utiliza el frontend para comunicarse con el servidor.
 
-### 4. Lo que NO hay, antes de tocar nada
+4. Lo que NO hay antes de empezar
+⚠ Todavía no hay instrumentación. El backend escribe registros con Pino, pero no exporta trazas, no propaga un identificador entre las operaciones de cada petición y no tiene configurado ningún destino para enviarlas.
 
-Es tu línea de partida, y mirarla ahora es lo que hace que el resultado del ejercicio signifique algo. Un comando:
+Abre backend/bin/server.ts antes de empezar. La primera línea de ese archivo cambiará durante el ejercicio, así que conviene ver cómo estaba originalmente.
 
-```bash
-ls .github/workflows backend/Dockerfile .railway
-```
+5. Crea tu rama
+Trabaja en una rama propia, no directamente en s14/start. Créala antes de enviar el primer prompt con este nombre: git checkout -b slo-<tus-iniciales>. Si el agente guarda los commits en otra rama, incorpóralos a la tuya con git merge <esa-rama> antes de hacer push.
 
-Dos de las tres rutas **no existen**, y ese error es la respuesta: este proyecto **ya tiene pipeline** (dos workflows, `openapi.yml`, que comprueba el documento de la API en cada cambio propuesto, y `revisor.yml`, la revisión con un agente, que se salta los pull requests que llegan desde un fork), y **no tiene imagen ni infraestructura**. Abre los dos workflows y léelos: el tuyo va a vivir al lado y va a seguir su estilo.
+🔀 Si el agente crea otra rama, no significa que haya cometido un error. El proyecto le prohíbe hacer commits en s14/start, la rama de partida que contiene el código original del ejercicio, antes de tus cambios. Por eso, el agente puede crear una rama nueva para guardar sus commits.
 
-Apunta también, ahora, qué variables tiene `backend/.env`. Vas a necesitar compararlas con lo que la imagen te reclame.
+Utiliza git branch y git log --oneline para comprobar dónde están los commits. git status puede aparecer limpio aunque el agente haya modificado varios archivos, porque los cambios ya están guardados en commits de otra rama.
 
-### 5. Crea tu rama
+📋 La tarea
+Instrumenta el backend con OpenTelemetry, envía las trazas a un servicio que se ejecuta en tu máquina, comprueba que una petición tuya llega y define un objetivo de nivel de servicio para la API, con su ventana y presupuesto de error.
 
-Trabaja en **tu propia rama**, no en `s13/start`. Créala **antes del primer prompt** con este nombre: `git checkout -b pipeline-<tus-iniciales>`. (El propio proyecto le prohíbe al agente commitear en una rama de partida, así que en cuanto tenga algo que guardar creará una rama nueva y commiteará ahí, **en cada prompt**. Es el proyecto haciendo lo que se le mandó. `git branch` y `git log --oneline` te enseñan dónde está todo, y `git status` saldrá limpio aunque acaben de escribirse cinco archivos.) Si el agente commitea en una rama suya, tráete esos commits a la tuya con `git merge <esa-rama>` antes de empujar.
+Es el mismo ejercicio que resolverá el mentor en el directo, sobre el mismo proyecto y con los mismos requisitos. Los prompts los escribes tú y forman parte de la entrega.
 
----
+Trabajarás sobre el backend de FlowSync (backend/). Utilizarás el paquete oficial de AdonisJS, @adonisjs/otel, que se instala desde backend/ con node ace add @adonisjs/otel, no con npm install. Las trazas se enviarán a un recolector local de OpenTelemetry, configurado con el exportador debug como un servicio adicional de compose.yaml.
 
-## 📋 La tarea
+También definirás un objetivo de nivel de servicio (Service Level Objective, SLO) en docs/slo/api.md, exclusivamente para las rutas de /api/v1/tasks, con estos valores:
 
-**Empaqueta la API en una imagen que se construya desde cero, arráncala y apunta qué le faltaba; después escribe el pipeline del repositorio, un trabajo por pregunta, y valídalo sin salir de tu máquina.**
+Indicador (Service Level Indicator, SLI): fracción de peticiones a esas rutas que responden con un código inferior a 500 y tardan menos de 500 milisegundos.
 
-Es el mismo encargo que se resuelve en el directo, con la misma unidad de trabajo y los mismos insumos. **Los prompts los escribes tú**, y son la mitad de lo que se entrega.
+Objetivo: al menos el 99 % de esas peticiones deben cumplir el indicador durante una ventana móvil de 28 días.
 
-> ✋ **Y el corte es fijo: el ejercicio termina con el pipeline validado en local.** No escribas la declaración de la infraestructura (la carpeta `.railway/`), no pidas ningún plan a ninguna plataforma y no despliegues nada. Eso necesita una cuenta que no se te pide, y se ve resuelto en el directo, donde lo que se compara es **tu resultado con el de la clase**.
+Presupuesto de error: calcula cuántas peticiones pueden incumplir el objetivo, suponiendo 20.000 peticiones durante la ventana.
 
-### 🅰️ Parte A: la imagen, y lo que le falta para arrancar
+No cambies las rutas ni los valores. En el directo compararás tu resultado con el del mentor, así que ambos debéis trabajar con los mismos requisitos.
 
-Pídele al agente, en tus propias palabras, **un `backend/Dockerfile` multietapa** y **un `backend/.dockerignore`**, más **tres atajos en el `Makefile` de la raíz**. Lo que tiene que cumplir, porque es lo que cumple el del directo:
+✋ El ejercicio termina cuando hayas escrito el objetivo. No pidas al agente que lea ni resuma los registros del recolector, no crees un subagente auditor ni modifiques la integración continua más allá de las tres variables indicadas. Esos pasos se verán en el directo.
 
-- **Dos etapas.** En la de construcción, la misma línea de Node que exige el proyecto (24), `npm ci` con todas las dependencias y `npm run build`, que en AdonisJS deja la aplicación compilada en `build/`. En la final, una imagen base de Node 24 lo más pequeña posible, **solo `build/`**, y dentro de `build/` las dependencias de producción (`npm ci --omit=dev`), que es como el propio framework documenta su despliegue. Ni el código fuente, ni las dependencias de desarrollo, ni ningún `.env` viajan a la imagen final.
-- Corre como **usuario sin privilegios**, expone el 3333 y arranca con `node bin/server.js`. **Ninguna variable de entorno con valor dentro del Dockerfile**: la configuración entra al arrancar el contenedor, no al construir la imagen.
-- El `.dockerignore` deja fuera `node_modules`, `build`, `tmp` y cualquier `.env`.
-- Los tres atajos, con estos nombres y no otros, porque son los que se usan en clase: **`image`** construye la imagen con la etiqueta `flowsync-api:local`; **`image-run`** la arranca en segundo plano con el nombre de contenedor `flowsync-api-local`, publicando el puerto `IMAGE_PORT` (por defecto 3334) sobre el 3333 del contenedor, pasándole `backend/.env` como fichero de entorno y forzando encima tres valores (`HOST=0.0.0.0` y `DB_HOST=host.docker.internal`, porque dentro del contenedor `localhost` es el propio contenedor, y `APP_URL=http://localhost:<IMAGE_PORT>`, porque Docker no expande el `${HOST}:${PORT}` que ese fichero usa), y termina con un `curl -s` a la raíz del puerto publicado; **`image-stop`** para y borra el contenedor.
+🅰 Parte A: instrumenta el backend y comprueba las trazas
+Abre tu agente en la raíz del proyecto.
 
-Después, en este orden, y sin que el agente lo haga por ti:
+Pídele que instrumente el backend con el paquete oficial y añada a compose.yaml un servicio llamado observability, utilizando la imagen otel/opentelemetry-collector-contrib:0.162.0. Debe publicar los puertos 4317 y 4318 y tener un archivo de configuración con un receptor otlp para ambos protocolos y un exportador debug con verbosity: detailed en la tubería de trazas.
 
-1. **`make image`.** Va a tardar: la primera vez se baja la imagen base de Node. Cuando termine, apunta el **tamaño** con `docker images flowsync-api:local`.
-2. **`docker run --rm flowsync-api:local`, sin ninguna variable.** Va a morir en menos de un segundo. **Copia el mensaje entero**, con su lista: es el dato del ejercicio, y es la lista de lo que esta aplicación necesita para existir. Compárala con las variables que apuntaste de `backend/.env`.
-3. **`make image-run`**, con la base de desarrollo levantada. Tiene que responder `{"hello":"world"}` desde dentro del contenedor. Si no responde, mira `docker logs flowsync-api-local` antes de tocar nada: el mensaje dice qué variable rechazó. Y **`make image-stop`** al terminar.
+Con detailed, cada tramo muestra su identificador de traza, nombre y horas de inicio y fin. El nivel predeterminado solo muestra un recuento. El nombre del servicio importa, porque docker compose up -d observability permite arrancarlo sin tocar las bases de datos.
 
-Tres restricciones, y ninguna es decorativa:
+Arranca el recolector y, después de instrumentar el backend, ejecuta make start. Genera tráfico desde el navegador: regístrate, crea dos tareas y cambia el estado de una.
 
-- **Una sola pasada por prompt.** Si la imagen no arranca, apúntalo, mira el mensaje y pide **una** corrección. Si tuviste que pedirla, eso es un hallazgo, no un fallo.
-- **No copies un Dockerfile de internet.** Lo que se estudia es qué escribe el agente cuando le das las restricciones de arriba y qué añade por su cuenta.
-- **No arregles a mano lo que salga.** Lo que salga es el dato.
+Comprueba las trazas con docker compose logs observability. Cada bloque identifica el servicio de origen (service.name: Str(flowsync-api)). Los tramos comienzan por Span # e incluyen Trace ID, Name, Kind, Start time y End time.
 
-### 🅱️ Parte B: el pipeline, un trabajo por pregunta
+Anota cuántas trazas distintas llegaron: docker compose logs observability | grep "Trace ID" | sort -u | wc -l
 
-Pídele al agente **`.github/workflows/ci.yml`** y **un atajo `ci-lint`** en el `Makefile` de la raíz. El atajo valida todos los workflows de `.github/workflows/` con actionlint **sin instalar nada**: usa su imagen oficial de Docker, `rhysd/actionlint:1.7.12`, montando la raíz del repositorio y con `-color`. El workflow tiene **cinco trabajos, y cada uno responde a una pregunta**, porque es lo que cumple el del directo:
+Busca una petición a /api/v1/tasks y comprueba dónde se consumió el tiempo. Compara la duración del tramo de la petición (Kind: Server) con la de sus consultas a la base de datos.
 
-1. **`test`**: ¿la suite del backend pasa en una máquina limpia? PostgreSQL como contenedor de servicio con la imagen `pgvector/pgvector:pg17` publicada en el puerto `54411`, que es el que `backend/.env.test` ya espera (usuario `flowsync`, contraseña `flowsync`, base `flowsync_test`), esperando a que esté sano. Y **exactamente `make test`**, el mismo comando que corres en tu máquina; ni un `node ace` a mano. Las variables que `backend/start/env.ts` exige y que no están en `.env.test` van en el entorno del trabajo, como hace `openapi.yml`.
-2. **`image`**: ¿el artefacto se puede fabricar desde cero? `make image`. Sin arrancar el contenedor: este trabajo afirma que la imagen se construye, no que arranque, y ese límite tiene que estar escrito en un comentario.
-3. **`lint-workflows`**: ¿los propios archivos del pipeline son válidos? `make ci-lint`.
-4. **`infra-plan`**: ¿qué cambiaría en la infraestructura si este cambio se fusiona? Solo en pull requests que toquen `.railway/**`, y solo si el pull request viene del propio repositorio y no de un fork, porque un fork no recibe los secretos. Con la acción oficial `railwayapp/config` en su versión `v1.2.0`, `command: plan` y el token en el secreto `RAILWAY_TOKEN`, para que el plan se publique como comentario del pull request.
-5. **`infra-apply`**: el mismo plan, con `command: apply`, solo cuando el pull request se fusiona.
+Hay tres detalles que debes vigilar:
 
-Y las reglas para todo el archivo: permisos mínimos declarados por trabajo, nunca `write-all`; cada acción de terceros **fijada a su SHA de commit completo** (*Secure Hash Algorithm*, el identificador de un commit), con la etiqueta de versión en un comentario al lado y resuelto por red, no de memoria; `test`, `image` y `lint-workflows` en paralelo; la ejecución anterior cancelada si llega otro push a la misma rama; y el recuento de tests publicado en el **resumen de la ejecución**, no en un `echo` que se pierde en el registro.
+La importación debe ser la primera línea. El instalador añade import '../otel.js' al principio de backend/bin/server.ts. Si el agente la mueve o carga otros módulos antes, la instrumentación puede no activarse. No aparece ningún error, pero tampoco llegan trazas.
 
-Después: **`make ci-lint`**. Tiene que quedarse en silencio con código 0. **Si canta, lo que canta es el dato**: apúntalo y pide una corrección. Y si el agente ya lo ejecutó por su cuenta y corrigió algo, apunta eso también.
+Tres variables nuevas en todos los entornos. El instalador añade APP_NAME, APP_VERSION y APP_ENV a la validación. Deben estar en backend/.env, backend/.env.example, backend/.env.test y en el bloque env: de .github/workflows/openapi.yml, que arranca la aplicación en cada pull request. Si falta alguna, el arranque falla y la comprobación del pull request aparece en rojo. Utiliza APP_NAME=flowsync-api para identificar el servicio en las trazas.
 
-> ⚠️ **No pongas ningún secreto en ningún archivo para que "funcione".** El trabajo `infra-plan` referencia un secreto que tú no tienes, y está bien así: en tu pull request ese trabajo **no correrá** (no toca `.railway/`, y no hay token). Un pipeline que corre la mitad sin llaves y la otra mitad solo para lo de dentro no está roto: está diseñado sabiendo que la mitad de fuera no tiene llaves.
+El puerto correcto. Configura OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 en backend/.env. El puerto 4318 corresponde a OTLP mediante HTTP; el 4317 utiliza gRPC, un protocolo de llamadas remotas entre servicios. Si utilizas el puerto incorrecto, las trazas pueden no llegar sin mostrar un error evidente.
 
-> 🔑 **Para cuando uses una plataforma de despliegue.** Declarar la infraestructura en un archivo y pedirle un plan a una plataforma exige una cuenta con sesión iniciada. Tres cosas verificadas contra su documentación el 12 de septiembre de 2026, para que no te pillen a medias: **(1)** la cuenta se verifica automáticamente por la antigüedad y la actividad de tu cuenta de GitHub, y si no pasa te deja en un modo restringido con la red saliente recortada, sin nadie a quien reclamar; **(2)** el plan de entrada es un crédito único que dura semanas, no meses, y al agotarse los servicios se apagan; **(3)** su sistema antiguo de configuración por archivo está deprecado con fecha de corte, y buena parte de lo que encontrarás en internet enseña ese. Si te creas la cuenta, hazlo con días de antelación y no despliegues nada que no puedas apagar.
+Respeta estas tres restricciones:
 
-### Parte C: las tres líneas
+Instala el paquete con el comando del framework, no con npm install. La instalación manual no genera ni registra todos los componentes necesarios.
 
-En un `HALLAZGOS.md` en la raíz del repositorio:
+No modifiques el frontend. Este ejercicio se centra en el backend.
 
-1. **Cuánto pesa tu imagen y qué tuvo que escribir el Dockerfile que tu máquina daba por hecho.** Una dependencia del sistema, una versión, un paso de construcción: lo que en tu portátil ya estaba y en una máquina vacía hubo que declarar.
-2. **Qué reclamó el contenedor al arrancar sin variables.** La lista literal, cuántas son, y cuáles de ellas son un **secreto** (su conocimiento da acceso) y cuáles **configuración** (si aparecieran en un registro público no pasaría nada). Es la clasificación de la lección de secretos, aplicada a tu lista real.
-3. **Qué NO comprueba tu pipeline.** Una lista corta e incómoda: lo que ninguno de los cinco trabajos afirma. Es la columna de la derecha de la tabla que leíste, rellena para el tuyo.
+No corrijas manualmente los problemas. Si no llegan las trazas, pide al agente que investigue la causa. Guarda también ese prompt en prompts.md: puede ser uno de los más interesantes de revisar.
 
-**El entregable no es tener la imagen perfecta: son las tres líneas.** Una parte A a medias con las tres líneas escritas vale más que lo contrario, porque lo que importa es dónde te chocaste.
+🅱 Parte B: define el objetivo de nivel de servicio
+Pide al agente que escriba el SLO en docs/slo/api.md con los valores indicados. El documento debe incluir cuatro elementos:
 
-### Cómo saber que la has hecho bien
+El indicador como fracción, con numerador y denominador, utilizando la ruta, el código de respuesta y la duración de cada petición.
 
-- **La imagen final no lleva el código fuente ni las dependencias de desarrollo.** Si pesa lo mismo que tu carpeta de trabajo, la segunda etapa se está copiando todo.
-- **Ningún `.env` viajó dentro**, y ninguna variable tiene valor escrito en el Dockerfile. Ese es el fallo que más caro sale y no lo canta nadie.
-- **Tienes el mensaje literal del arranque sin variables**, copiado entero. Es el dato del ejercicio, y reconstruirlo de memoria no vale.
-- **`make ci-lint` se queda en silencio con código 0.** Si canta, apunta lo que dijo: eso también es entrega.
-- **Cada acción de terceros está fijada a su SHA completo**, resuelto por red y no de memoria. Una etiqueta de versión se puede mover debajo de ti.
-- **La tercera línea nombra cosas concretas que tu pipeline no comprueba**, no *«faltan cosas»*.
+El objetivo del 99 % y su ventana móvil de 28 días.
 
-> Entrégalo con lo que tenga.
+El presupuesto de error expresado en peticiones, calculado con el volumen supuesto de 20.000 peticiones. Debe quedar claro que ese volumen se sustituirá por el real.
 
----
+Una única alerta basada en un problema que percibe el usuario, no en una causa interna. Debe avisar cuando el ritmo de consumo del presupuesto indique que se agotará antes de terminar la ventana.
 
-## 📤 Cómo se entrega
+También debe indicar expresamente qué rutas quedan fuera del objetivo: todas las que no pertenezcan a /api/v1/tasks, como el registro y el inicio de sesión. Si necesitas medirlas, deberán tener su propio objetivo y presupuesto.
 
-1. Trabaja en la rama **`pipeline-<tus-iniciales>`** que creaste al preparar el entorno, no en `s13/start`.
-2. **Guarda tus prompts en `prompts.md`, en la raíz.** Ese nombre y esa ubicación no son negociables: es lo que lee la herramienta que revisa las entregas. El repositorio ya lo trae con su plantilla puesta. **Cada prompt va en su propio bloque de código**, con el modelo y la herramienta que usaste.
-3. Empuja tu rama a tu fork (`git push -u origin pipeline-<tus-iniciales>`) y abre el **pull request desde tu fork hacia el repositorio del curso** (`github.com/lidr-academy-temp/flowsync-ai4devs`; comprueba que el repositorio base que te propone GitHub es ese y no tu fork), con `HALLAZGOS.md` y `prompts.md` dentro. **Puede que tu pipeline no llegue a correr sobre ese pull request**: en un repositorio público, las Actions de quien colabora por primera vez suelen esperar a que alguien las apruebe, y los dos trabajos de infraestructura se saltan de todos modos, porque un fork no recibe los secretos. Si corre, mira qué pasa; si no, apúntalo. En los dos casos, **apúntalo en la tercera línea si cambia tu respuesta**.
+Parte C: escribe tus tres hallazgos
+En la raíz del repositorio, crea HALLAZGOS.md o vacíalo si ya existe. Escribe tres líneas:
 
-### El plazo
+Cuántas trazas aparecieron y qué tramo consumió más tiempo en la más lenta, utilizando los datos que anotaste.
 
-**El plazo es antes del directo.**
+Qué cambiaste para conseguir que llegaran. Si al principio no aparecieron, explica cuál era el problema. Si funcionó al primer intento, indícalo también.
 
----
+Cuánto presupuesto de error obtuviste, expresado en peticiones, y si te parece mucho o poco para un mes de uso real de FlowSync.
 
-## 📚 Si vas justo de tiempo
+No necesitas una instrumentación perfecta para entregar. Una Parte A incompleta, acompañada de los tres hallazgos, permite revisar qué ocurrió y dónde encontraste dificultades.
 
-Prioriza la lección sobre **por qué lo que se despliega no es tu código sino una imagen**, que es la parte A entera, y la que trata **qué garantiza cada etapa del pipeline**, que es la parte B. Las otras tres pueden esperar, aunque la de secretos y entornos es la que te da el vocabulario de la segunda línea que entregas.
+Cómo comprobar que has terminado
+Has visto trazas reales en el recolector y anotado cuántas llegaron. Si no apareció ninguna, has documentado qué intentaste.
 
-Y si el reloj aprieta de verdad, la prioridad es la **parte A**: la imagen y su lista de variables son el dato más rico del ejercicio.
+La importación de OpenTelemetry sigue siendo la primera línea de backend/bin/server.ts.
 
----
+Las tres variables nuevas están en los tres archivos de entorno y en el workflow que arranca la aplicación.
 
-## ✅ Antes de conectarte, comprueba
+El SLO incluye sus cuatro elementos, con el presupuesto expresado en peticiones.
 
-- [ ] Estás en la rama de partida, sobre **tu fork**, y `git push` funciona.
-- [ ] `docker ps` devuelve una tabla, `node -v` responde `v24` o más, y `make --version` responde.
-- [ ] **`make image` construyó**, y tienes apuntado el tamaño.
-- [ ] **Tienes copiado el mensaje entero** del arranque sin variables, con su lista.
-- [ ] **`make ci-lint` corrió una vez** y tienes anotado lo que salió.
-- [ ] **Traes `HALLAZGOS.md`** con sus tres líneas, y el Dockerfile y el workflow dentro del cambio.
-- [ ] **`prompts.md` está relleno**, con modelo y herramienta en cada bloque.
-- [ ] **Tu rama se llama `pipeline-<tus-iniciales>` y el pull request está abierto contra el repositorio del curso.**
+El documento indica qué rutas quedan fuera del objetivo.
 
-> Trae el archivo tal como quedó, sin maquillarlo: lo que le falta es la mitad de lo interesante.
+No has modificado el frontend. Compruébalo con git diff --stat.
 
----
+Entrega lo que hayas conseguido, aunque esté incompleto.
 
-## 🎯 Qué te llevas del Módulo 13
+📤 Cómo se entrega
+Trabaja en la rama slo-<tus-iniciales>, creada durante la preparación del entorno. No utilices s14/start, que es la rama de partida del ejercicio.
 
-**El modelo mental**: que el valor de declarar la infraestructura en un archivo no es automatizarla, es que aparece un diff y, antes de aplicar nada, un plan que enumera lo que se crearía, lo que se modificaría y lo que se destruiría, y que ese plan es la única revisión que en código de aplicación no existe. Que lo que se despliega no es tu código sino una imagen que lleva la máquina dentro, y que construirla desde cero te obliga a escribir lo que dabas por hecho. Que un pipeline en verde no significa que el cambio esté bien, sino que ninguna de las comprobaciones que hay ha fallado, y que cada trabajo responde a una pregunta y no responde a las demás. Que el mejor secreto es el que no existe, que una credencial se clasifica por si su conocimiento da acceso, y que la mitad del pipeline que necesita llaves no corre para un cambio que viene de fuera. Y que una funcionalidad que existe no es una funcionalidad que tú tengas: el plan y la visibilidad del repositorio son parte de la arquitectura.
+Guarda todos tus prompts en prompts.md, en la raíz del repositorio. El archivo ya incluye una plantilla. Conserva exactamente ese nombre y ubicación porque la herramienta de revisión los utiliza. Escribe cada prompt en su propio bloque de código, indicando el modelo y la herramienta que usaste.
 
-**Lo que queda en el proyecto**: un Dockerfile de la API en dos etapas con su `.dockerignore`, y tres atajos de `make` para construir, arrancar y parar la imagen. Un workflow `ci.yml` con cinco trabajos, cada uno con su pregunta y su límite escrito, las acciones fijadas a un identificador de commit, y la mitad de infraestructura que solo corre para lo de dentro; más un atajo `ci-lint` que lo valida con el mismo comando en tu máquina y en la máquina limpia. Un fichero de hallazgos con tus tres líneas: el tamaño de tu imagen, la lista de lo que reclamó el contenedor, y lo que tu pipeline no comprueba. Y el registro de tus prompts, con la forma exacta en que pediste la imagen y el pipeline, que es lo que te permite explicar después por qué salió lo que salió.
+Sube tu rama al fork (git push -u origin slo-<tus-iniciales>) y abre un pull request desde tu fork hacia el repositorio del curso (github.com/LIDR-academy-temp/flowsync-ai4devs). Comprueba que GitHub haya seleccionado el repositorio del curso como destino, no tu fork. El cambio debe incluir HALLAZGOS.md, docs/slo/api.md y prompts.md. No incluyas backend/.env: está ignorado por Git y debe seguir así.
 
-> 👥 **Qué te llevas según de dónde vengas.**
-> - **Si eres dev**: lo que merece tu tiempo es la lista de lo que cada paso del pipeline no comprueba, porque ahí están sus huecos. Y en un despliegue, saber qué se deshace y qué no, que es lo que decide el orden de los pasos.
-> - **Si vienes de producto o gestión**: declarar la infraestructura en un archivo convierte una decisión en algo que alguien propuso y otro aprobó. «Está todo en verde» significa que ninguna de las comprobaciones que existen ha fallado, y «esto no se puede hacer con lo que tenemos» pesa más con la línea de la documentación que lo dice.
-> - **Si no tienes background técnico**: el código es la receta, y lo que se despliega es el plato ya hecho. Un control de calidad solo garantiza lo que mide.
+El plazo
+Debes entregar el ejercicio antes del directo.
+
+📚 Si vas justo de tiempo
+Prioriza la lección sobre la diferencia entre monitorizar y observar, que te ayudará a interpretar las trazas, y la que explica por qué una alerta útil describe lo que percibe el usuario y no la causa interna del fallo. Las otras tres pueden esperar.
+
+Si tienes muy poco tiempo, céntrate en la Parte B. Puedes definir el SLO aunque no hayas conseguido recibir trazas. Documentar por qué no llegaron también forma parte del ejercicio.
+
+✅ Antes de conectarte, comprueba
+[ ] Estás trabajando en tu fork, en la rama slo-<tus-iniciales>, creada a partir de s14/start, y git push funciona.
+
+[ ] docker ps devuelve una tabla, node -v muestra la versión 24 o superior y make --version responde.
+
+[ ] El recolector arranca correctamente. docker compose logs observability muestra Everything is ready. Begin running and processing data.
+
+[ ] Has generado tráfico desde el navegador: registro, dos tareas nuevas y un cambio de estado.
+
+[ ] Has anotado cuántas trazas aparecieron y qué tramo consumió más tiempo en la más lenta. Si no apareció ninguna, has documentado qué probaste.
+
+[ ] HALLAZGOS.md contiene las tres líneas y docs/slo/api.md está incluido en los cambios. backend/.env no está incluido.
+
+[ ] prompts.md contiene todos tus prompts, con el modelo y la herramienta utilizados.
+
+[ ] Has abierto el pull request desde slo-<tus-iniciales> hacia el repositorio del curso.
+
+Trae los archivos tal como quedaron, sin corregirlos después: los problemas que encontraste también son parte de lo que revisaremos.
+
+🎯 Qué te llevas del Módulo 14
+El modelo mental: monitorizar permite responder preguntas previstas; observar, investigar preguntas nuevas sin desplegar cambios. Lo que podrás analizar mañana depende de los datos que guardes hoy.
+
+Con OpenTelemetry, la instrumentación y el destino de las trazas son independientes. Puedes instrumentar una vez y cambiar el destino mediante una variable de entorno. Las alertas avisan de problemas que afectan al usuario, mientras que las trazas ayudan a identificar sus causas. Un SLO permite medir la fiabilidad mediante un indicador, una ventana y un presupuesto de error.
+
+En seguridad, cada herramienta automática detecta determinadas clases de fallos, pero las reglas de negocio deben definirse antes de escribir el código. También debes comprobar las licencias de las herramientas y qué información envían fuera de tu máquina.
+
+Lo que queda en el proyecto: un backend instrumentado con el paquete oficial de AdonisJS y configurado para enviar trazas mediante una variable de entorno. Un servicio observability en compose.yaml que recibe las trazas y las escribe en sus registros locales.
+
+También tendrás un SLO en docs/slo/api.md, con su indicador, ventana, presupuesto de error y alerta; un archivo HALLAZGOS.md con tus tres observaciones y un prompts.md con las instrucciones que enviaste al agente.
+
+👥 Qué te llevas según tu perfil
+
+Si eres dev: aprenderás a relacionar registros estructurados mediante identificadores de traza, instrumentar con el paquete oficial, configurar un destino y definir un SLO para una operación importante. También comprobarás las licencias de las herramientas que incorporas al desarrollo.
+
+Si vienes de producto o gestión: el presupuesto de error permite evaluar cuánto riesgo puede asumir el producto. Las reglas de negocio deben quedar escritas antes de implementar las funcionalidades, porque los analizadores automáticos no pueden deducirlas. Utilizar un protocolo estándar también facilita cambiar de proveedor.
+
+Si no tienes experiencia técnica: entenderás por qué una media puede ocultar los casos problemáticos que afectan a los usuarios. Un sistema puede mostrar métricas internas correctas mientras las personas encuentran errores o abandonan una compra.
