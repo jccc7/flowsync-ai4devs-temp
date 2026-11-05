@@ -1,0 +1,20 @@
+# Colector local de OpenTelemetry (servicio `observability` de compose.yaml).
+# Recibe trazas por OTLP y las escribe enteras en el registro del contenedor:
+# cada tramo con su identificador, su nombre y sus horas de inicio y fin.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug]

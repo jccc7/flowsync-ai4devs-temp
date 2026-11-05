@@ -50,5 +50,17 @@ services:
       retries: 30
       start_period: 5s
 
+  # Destino local de las trazas de OpenTelemetry: un colector que las recibe por
+  # OTLP y las escribe en su registro (`docker compose logs -f observability`).
+  # Lo levanta solo `make otel-up`; `make db-up` no lo toca y la API arranca sin
+  # él. La configuración está en `otel-collector.yaml`, en la raíz.
+  observability:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    ports:
+      - '4317:4317' # OTLP por gRPC
+      - '4318:4318' # OTLP por HTTP: el que usa el SDK de JavaScript por defecto
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+
 volumes:
   db-data:
